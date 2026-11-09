@@ -18,8 +18,8 @@ const result = await build({
 const load = (name) => import(`data:text/javascript;base64,${Buffer.from(
   result.outputFiles.find((file) => file.path.endsWith(`/${name}.js`)).text,
 ).toString('base64')}`)
-const { chooseComputerMove } = await load('computerPlayer')
-const { legalMoves, newGame, playCard } = await load('gameLogic')
+const { chooseBlindDraw, chooseComputerMove } = await load('computerPlayer')
+const { drawBlind, legalMoves, newGame, playCard } = await load('gameLogic')
 const { bustColumn, scheduleTotals } = await load('scheduleTotals')
 
 const cards = [
@@ -87,7 +87,7 @@ test('hard chooses a non-busting placement over a tempting point gain', () => {
   assert.equal(bustColumn(next.schedules[1], state.starting[1]), null)
 })
 
-test('hard preserves more future placements when immediate totals are equal', () => {
+test('hard preserves more future placements when immediate points are equal', () => {
   const state = game()
   state.schedules[1][0][0] = { id: 90, top: 3, bottom: 3, placedAt: 1 }
   state.drawArea = [
@@ -106,8 +106,20 @@ test('hard preserves more future placements when immediate totals are equal', ()
   }
   const mediumResult = evaluate(medium)
   const hardResult = evaluate(hard)
-  assert.deepEqual(hardResult.totals, mediumResult.totals)
+  assert.equal(hardResult.totals.points, mediumResult.totals.points)
   assert.ok(hardResult.options > mediumResult.options)
+})
+
+test('hard avoids starting final turns while behind when an equivalent earlier placement is available', () => {
+  const state = game()
+  state.starting[0].points = 100
+  for (let day = 0; day < 4; day++) {
+    state.schedules[1][day][0] = { id: 100 + day, top: 2, bottom: 1, placedAt: 1 }
+  }
+  state.drawArea = [{ id: 201, top: 0, bottom: 6 }]
+  const move = chooseComputerMove(state, 'hard', () => 0)
+  assert.notEqual(move.day, 4)
+  assert.equal(move.slot, 2)
 })
 
 test('medium and hard choices do not depend on hidden deck order or card values', () => {
@@ -115,5 +127,20 @@ test('medium and hard choices do not depend on hidden deck order or card values'
   const differentDeck = { ...state, deck: state.deck.map((card) => ({ ...card, top: -900, bottom: 800 })).reverse() }
   for (const difficulty of ['medium', 'hard']) {
     assert.deepEqual(chooseComputerMove(state, difficulty, () => 0), chooseComputerMove(differentDeck, difficulty, () => 0))
+  }
+})
+
+test('computers can choose blind without inspecting hidden cards and must play the revealed card', () => {
+  for (const difficulty of ['easy', 'medium', 'hard']) {
+    const state = game()
+    const altered = { ...state, deck: state.deck.map((card) => ({ ...card, top: -900, bottom: 800 })).reverse() }
+    assert.equal(chooseBlindDraw(state, difficulty, () => 0), true)
+    assert.equal(chooseBlindDraw(altered, difficulty, () => 0), true)
+    assert.equal(chooseBlindDraw(state, difficulty, () => 0.99), false)
+    assert.equal(chooseBlindDraw({ ...state, deck: [] }, difficulty, () => 0), false)
+    const revealed = drawBlind(state)
+    const move = chooseComputerMove(revealed, difficulty, () => 0)
+    assert.equal(move.card.id, revealed.blindCard.id)
+    assert.equal(playCard(revealed, move.card.id, move.day, move.slot).schedules[1][move.day][move.slot].id, move.card.id)
   }
 })

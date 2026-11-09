@@ -11,7 +11,7 @@ type Props = { onStart: (numPlayers: number, difficulty: Difficulty) => void }
 const difficulties: { value: Difficulty; label: string; description: string }[] = [
   { value: 'easy', label: 'Easy', description: 'Random legal moves.' },
   { value: 'medium', label: 'Medium', description: 'Favors points and safe resources.' },
-  { value: 'hard', label: 'Hard', description: 'Also weighs bust risk and future options.' },
+  { value: 'hard', label: 'Hard', description: 'Plans ahead and considers when to end the week.' },
 ]
 
 function StartScreen({ onStart }: Props) {

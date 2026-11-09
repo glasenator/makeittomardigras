@@ -33,7 +33,7 @@ function RulesButton() {
           <h3>1. Set up</h3>
           <ul>
             <li>Choose <strong>2–5 players</strong>, including yourself. All other players are computers.</li>
-            <li>Choose one difficulty for all computers: <strong>Easy</strong> chooses random legal moves; <strong>Medium</strong> favors points and resources; <strong>Hard</strong> also considers bust risk and future placement options.</li>
+            <li>Choose one difficulty for all computers: <strong>Easy</strong> chooses random legal moves; <strong>Medium</strong> favors points and resources; <strong>Hard</strong> also considers bust risk, future placements, and when to end the week.</li>
             <li>Each player starts with <strong>5 money and 5 energy</strong>. Each week uses its own shuffled deck.</li>
             <li>Deal face-up cards to the draw area: <strong>one more card than the number of players</strong>. For example, with 3 players, deal 4 cards.</li>
           </ul>
@@ -41,15 +41,16 @@ function RulesButton() {
 
         <section>
           <h3>2. Take turns</h3>
-          <p>You start week 1. On your turn, <strong>choose one card from the draw area and drag it into your schedule</strong>. Play continues clockwise.</p>
-          <p>After everyone has picked, one card remains in the draw area. <strong>Leave it there</strong> and add cards from the deck until the draw area is full again.</p>
+          <p>You start week 1. On your turn, choose a face-up card from the draw area, or <strong>draw blind</strong> from the top of the deck. Drag your chosen card into your schedule. Play continues clockwise.</p>
+          <p>A blind card is revealed after you draw it and must be placed instead of a face-up card. If it has no legal placement, set it aside and skip your turn. You cannot draw blind when the deck is empty.</p>
+          <p>After everyone has taken a turn, <strong>keep all unpicked face-up cards</strong> and add cards from the deck until the draw area is full again.</p>
           <h4>Who starts the next draw?</h4>
-          <p>Compare the cards players just picked, adding the two numbers on each card. The player whose card has the <strong>lowest sum</strong> starts the next draw. If there is a tie:</p>
+          <p>Players who drew blind are <strong>ineligible to start the next draw</strong>. Compare the face-up cards the other players picked, adding the two numbers on each card. The player whose card has the <strong>lowest sum</strong> starts the next draw. If there is a tie:</p>
           <ol>
             <li>Among the tied cards, the card with the <strong>lowest individual number</strong> goes first.</li>
             <li>If there is still a tie, the first tied player clockwise after the previous draw&apos;s starting player goes first.</li>
           </ol>
-          <p>Play then continues clockwise from that player. Final turns follow a different rule; see <strong>End the week</strong>.</p>
+          <p>If everyone drew blind, the next player clockwise after the previous starting player starts. Play then continues clockwise. Final turns follow a different rule; see <strong>End the week</strong>.</p>
         </section>
 
         <section>

@@ -20,10 +20,10 @@ const steps: Step[] = [
     title: 'Pick a card',
     content: (
       <>
-        <p>On your turn, choose a face-up card from the draw area and drag it into your schedule. Then play passes clockwise.</p>
+        <p>On your turn, choose a face-up card from the draw area or draw blind from the deck. Drag your card into your schedule, then play passes clockwise.</p>
         <div className="walkthrough-example">
           <strong>Example: 3 players</strong>
-          <p>The draw area starts with 4 cards: one more than the number of players. Each player picks one, leaving one card behind.</p>
+          <p>The draw area starts with 4 cards: one more than the number of players. If all three players pick face-up cards, one remains.</p>
           <div className="walkthrough-cards" aria-label="Example draw area: plus 2 and minus 1, minus 3 and plus 4, zero and plus 2, plus 1 and plus 3">
             <span className="walkthrough-card" aria-hidden="true"><span>+2</span><span>-1</span></span>
             <span className="walkthrough-card" aria-hidden="true"><span>-3</span><span>+4</span></span>
@@ -31,7 +31,7 @@ const steps: Step[] = [
             <span className="walkthrough-card" aria-hidden="true"><span>+1</span><span>+3</span></span>
           </div>
         </div>
-        <p>When one card remains, it stays put. New cards are added around it to refill the draw area.</p>
+        <p>After everyone takes a turn, all unpicked cards stay put and the draw area is refilled. Drawing blind is a gamble: you must place the revealed card, and you cannot start the next draw. If it has no legal placement, set it aside and skip your turn.</p>
       </>
     ),
   },
@@ -83,12 +83,12 @@ const steps: Step[] = [
     title: 'Who picks first next?',
     content: (
       <>
-        <p>After everyone has picked and the draw area is refilled, compare the sums of the two numbers on each picked card. The lowest sum picks first in the new draw.</p>
+        <p>After everyone has picked and the draw area is refilled, compare the sums of the face-up cards picked. The lowest sum picks first; anyone who drew blind is ineligible.</p>
         <div className="walkthrough-example">
           <strong>Example: a tie</strong>
           <p>Cards [-3, +4] and [-2, +3] both add up to 1. The player who picked [-3, +4] goes first because -3 is the lowest individual number.</p>
         </div>
-        <p>If that is tied too, the first tied player clockwise after the previous draw&apos;s starting player goes first. Play continues clockwise. During final turns, clockwise order takes priority instead.</p>
+        <p>If that is tied too, the first tied player clockwise after the previous draw&apos;s starting player goes first. If everyone drew blind, the next player clockwise after the previous starter goes first. During final turns, clockwise order takes priority instead.</p>
       </>
     ),
   },

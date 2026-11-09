@@ -10,7 +10,7 @@ const result = await build({
   format: 'esm',
   platform: 'node',
 })
-const { canPlace, completedWeekTotals, lastPlayStatus, legalMoves, newGame: createGame, playCard, startNextWeek, winningPlayers } = await import(
+const { canPlace, completedWeekTotals, drawBlind, lastPlayStatus, legalMoves, newGame: createGame, playCard, startNextWeek, winningPlayers } = await import(
   `data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`
 )
 const { visibleSections } = await import(
@@ -519,6 +519,7 @@ test('a final-turn refill keeps the leftover with exactly enough cards in the de
     extraTurns: 2,
     drawArea: cards.slice(0, 2),
     deck: cards.slice(2, 4),
+    drawPicks: [null, { id: -20, top: 0, bottom: 0 }],
   }
   state = playCard(state, cards[0].id, 0, 0)
   assert.equal(state.extraTurns, 1)
@@ -538,10 +539,11 @@ test('last-play status accounts for final turns, deck shortage, and fifth-column
   assert.equal(lastPlayStatus({ ...state, extraTurns: 1 }), 'last')
   assert.equal(lastPlayStatus({ ...state, extraTurns: 1, error: 'error' }), null)
   assert.equal(lastPlayStatus({ ...state, extraTurns: 1, weekComplete: true }), null)
-  assert.equal(lastPlayStatus({ ...state, extraTurns: 1, drawArea: [] }), null)
+  assert.equal(lastPlayStatus({ ...state, extraTurns: 1, drawArea: [] }), 'last')
+  assert.equal(lastPlayStatus({ ...state, extraTurns: 1, drawArea: [], deck: [] }), null)
 
-  state = { ...state, drawArea: cards.slice(0, 2), deck: cards.slice(2, 3) }
-  assert.equal(lastPlayStatus(state), 'last')
+  state = { ...state, drawArea: cards.slice(0, 2), deck: cards.slice(2, 3), drawPicks: [null, { id: -20, top: 0, bottom: 0 }] }
+  assert.equal(lastPlayStatus(state), 'possible')
   assert.equal(lastPlayStatus({ ...state, deck: cards.slice(2, 4) }), null)
 
   const schedule = state.schedules[0].map((column, day) => day < 4
@@ -549,6 +551,110 @@ test('last-play status accounts for final turns, deck shortage, and fifth-column
     : column)
   state = { ...state, schedules: [schedule, state.schedules[1]], deck: [] }
   assert.equal(lastPlayStatus(state), 'possible')
+})
+
+test('blind draws are revealed, must be placed, and cannot start the next draw', () => {
+  const cards = deck(12)
+  let state = newGame(2, cards)
+  const top = state.deck[0]
+  const faceUp = state.drawArea[0]
+  state = drawBlind(state)
+  assert.deepEqual(state.blindCard, top)
+  assert.equal(state.deck.length, 8)
+  assert.equal(playCard(state, faceUp.id, 0, 0), state)
+  assert.equal(drawBlind(state), state)
+  state = playCard(state, top.id, 0, 0)
+  assert.equal(state.blindCard, null)
+  assert.equal(state.drawPicks[0], 'blind')
+  assert.equal(state.drawArea.length, 3)
+  state = playCard(state, faceUp.id, 0, 0)
+  assert.equal(state.turn, 1)
+  assert.equal(state.drawStarter, 1)
+  assert.deepEqual(state.drawArea, [cards[1], cards[2], cards[4]])
+  assert.deepEqual(state.drawPicks, [null, null])
+})
+
+test('all-blind draws rotate the starter and retain the whole draw area', () => {
+  const cards = deck(12)
+  let state = newGame(2, cards)
+  const original = state.drawArea
+  for (let i = 0; i < 2; i++) {
+    state = drawBlind(state)
+    state = playCard(state, state.blindCard.id, 0, 0)
+  }
+  assert.equal(state.turn, 1)
+  assert.equal(state.drawStarter, 1)
+  assert.deepEqual(state.drawArea, original)
+  assert.equal(state.deck.length, 7)
+  assert.deepEqual(state.drawPicks, [null, null])
+})
+
+test('unplaceable blind cards are set aside and skipped, including during final turns', () => {
+  let state = newGame(2, deck(12))
+  state.schedules[0] = state.schedules[0].map((column, day) =>
+    column.map((_, slot) => ({ id: 100 + day * 3 + slot, top: 0, bottom: 0, placedAt: slot + 1 })))
+  const card = state.deck[0]
+  state = drawBlind(state)
+  assert.equal(state.blindCard, null)
+  assert.deepEqual(state.blindSkip, { player: 0, card })
+  assert.deepEqual(state.setAside, [card])
+  assert.equal(state.turn, 1)
+  assert.equal(state.drawPicks[0], 'blind')
+  state = playCard(state, state.drawArea[0].id, 0, 0)
+  assert.equal(state.turn, 1)
+  assert.deepEqual(state.drawPicks, [null, null])
+  const final = drawBlind({ ...state, turn: 0, extraTurns: 1 })
+  assert.equal(final.weekComplete, true)
+  assert.equal(final.blindSkip.player, 0)
+})
+
+test('blind draws respect empty decks and short refills without losing cards', () => {
+  let state = newGame(2, deck(5))
+  state = drawBlind(state)
+  state = playCard(state, state.blindCard.id, 0, 0)
+  state = drawBlind(state)
+  state = playCard(state, state.blindCard.id, 0, 0)
+  assert.equal(state.weekComplete, false)
+  assert.equal(state.deck.length, 0)
+  assert.equal(drawBlind(state), state)
+  state = playCard(state, state.drawArea[0].id, 1, 0)
+  state = playCard(state, state.drawArea[0].id, 1, 0)
+  assert.equal(state.weekComplete, true)
+  assert.equal(allCards(state).length, 5)
+})
+
+test('a blind draw can cause a short refill with multiple face-up cards remaining', () => {
+  let state = newGame(2, deck(4))
+  state = drawBlind(state)
+  state = playCard(state, state.blindCard.id, 0, 0)
+  state = playCard(state, state.drawArea[0].id, 0, 0)
+  assert.equal(state.weekComplete, true)
+  assert.equal(state.drawArea.length, 2)
+  assert.equal(allCards(state).length, 4)
+})
+
+test('a blind skip still consumes a final turn and preserves clockwise order', () => {
+  let state = newGame(3, deck(20))
+  state.schedules[1] = state.schedules[1].map((column, day) =>
+    column.map((_, slot) => ({ id: 100 + day * 3 + slot, top: 0, bottom: 0, placedAt: slot + 1 })))
+  state = { ...state, turn: 1, extraTurns: 3 }
+  state = drawBlind(state)
+  assert.equal(state.extraTurns, 2)
+  assert.equal(state.turn, 2)
+  assert.equal(state.drawPicks[1], 'blind')
+  state = playCard(state, state.drawArea[0].id, 0, 0)
+  assert.equal(state.turn, 0)
+  assert.equal(state.extraTurns, 1)
+  state = playCard(state, state.drawArea[0].id, 0, 0)
+  assert.equal(state.weekComplete, true)
+})
+
+test('a forced blind draw on the last final turn is a last play', () => {
+  const state = newGame(2, deck(10))
+  state.schedules[0] = state.schedules[0].map((column, day) =>
+    column.map((_, slot) => ({ id: 100 + day * 3 + slot, top: 0, bottom: 0, placedAt: slot + 1 })))
+  assert.equal(lastPlayStatus({ ...state, extraTurns: 1 }), 'last')
+  assert.equal(lastPlayStatus({ ...state, extraTurns: 1, deck: [] }), null)
 })
 
 test('completed weeks flip bust columns, preserve earlier totals, and lock play until continuing', () => {

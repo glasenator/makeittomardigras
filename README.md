@@ -12,7 +12,7 @@ A colorful card-game playtest for **2–5 players**: you and up to four computer
 
 ![A game in progress, showing computer schedules, the draw area, and the player's schedule](docs/images/gameplay.png)
 
-1. **Pick a card** from the draw area and drag it onto your schedule.
+1. **Pick a card** from the draw area, or risk a blind draw from the deck, and place it on your schedule. Blind draws cannot start the next draw; an unplaceable blind card is set aside and the turn is skipped.
 2. **Build your week** by overlapping cards and balancing points, money, and energy.
 3. **Watch for a bust:** if your final money or energy is negative, affected columns are flipped and count as zero.
 4. **Play three weeks.** The most points wins; ties are broken by energy, then money.

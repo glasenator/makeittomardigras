@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
 import { makeDecks, type Card, type WeekDecks } from './deck'
-import { canPlace, completedWeekTotals, DAYS, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, WEEKS, winningPlayers } from './gameLogic'
+import { canPlace, completedWeekTotals, DAYS, drawBlind, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, WEEKS, winningPlayers } from './gameLogic'
 import { scheduleTotals } from './scheduleTotals'
 import { formatValue } from './formatValue'
 import RulesButton from './RulesButton'
 import WalkthroughButton from './WalkthroughButton'
-import { chooseComputerMove, type Difficulty } from './computerPlayer'
+import { chooseBlindDraw, chooseComputerMove, type Difficulty } from './computerPlayer'
 
 function CardFace({ top, bottom }: { top: ReactNode; bottom: ReactNode }) {
   return (
@@ -58,7 +58,9 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     if (isOver) gameOverHeading.current?.focus()
   }, [isOver])
 
-  const noMoves = !state.weekComplete && !state.gameOver && legalMoves(state.schedules[state.turn], state.drawArea).length === 0
+  const availableCards = state.blindCard ? [state.blindCard] : state.drawArea
+  const noMoves = !state.weekComplete && !state.gameOver &&
+    legalMoves(state.schedules[state.turn], availableCards).length === 0 && (state.blindCard !== null || state.deck.length === 0)
 
   const canPick = state.turn === 0 && !state.weekComplete && !isOver && !state.error && !noMoves
 
@@ -69,6 +71,10 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
   useEffect(() => {
     if (state.weekComplete || isOver || state.error || noMoves || state.turn === 0) return
     const t = setTimeout(() => {
+      if (chooseBlindDraw(state, difficulty)) {
+        setState((s) => drawBlind(s))
+        return
+      }
       const move = chooseComputerMove(state, difficulty)
       if (!move) throw new Error('Computer turn has no eligible move.')
       pick(move.card, move.day, move.slot)
@@ -100,7 +106,7 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     e.preventDefault()
     const spot = spotAt(e)
     const id = Number(e.dataTransfer.getData('text/plain'))
-    const card = state.drawArea.find((c) => c.id === id)
+    const card = (state.blindCard ? [state.blindCard] : state.drawArea).find((c) => c.id === id)
     if (card && canPick && spot) pick(card, spot.day, spot.slot)
     clearDrag()
   }
@@ -177,6 +183,8 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       <span className="difficulty-badge">Computer: {difficulty}</span>
     </div>
   )
+  const blindSkipMessage = state.blindSkip &&
+    `${state.blindSkip.player === 0 ? 'You drew' : `Computer ${state.blindSkip.player} drew`} ${formatValue(state.blindSkip.card.top)} / ${formatValue(state.blindSkip.card.bottom)} from the deck. There was no legal placement, so the card was set aside and the turn was skipped.`
 
   if (isOver) {
     const totals = completedWeekTotals(state)
@@ -193,6 +201,7 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
           <p>Point ties are broken by energy, then money.</p>
         </header>
         {toolbar}
+        {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
         <section className="final-boards" aria-labelledby="final-boards-heading">
           <h2 id="final-boards-heading">Final schedules</h2>
           <p>Final scores include carried-over points and any busts from week 3.</p>
@@ -202,8 +211,24 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     )
   }
 
-  const playableIds = new Set(legalMoves(state.schedules[state.turn], state.drawArea).map((move) => move.card.id))
+  const playableIds = new Set(legalMoves(state.schedules[state.turn], availableCards).map((move) => move.card.id))
   const lastPlay = lastPlayStatus(state)
+  const renderDrawCard = (card: Card, enabled: boolean) => (
+    <div
+      className={`card${enabled ? ' pickable' : ''}`}
+      key={card.id}
+      draggable={enabled}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', String(card.id))
+        const rect = e.currentTarget.getBoundingClientRect()
+        grab.current = { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width }
+        setDraggedCard(card)
+      }}
+      onDragEnd={clearDrag}
+    >
+      <CardFace top={card.top} bottom={card.bottom} />
+    </div>
+  )
 
   return (
     <main className="game">
@@ -226,32 +251,26 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
         <div className="deck-pile">
           <h2>Deck ({state.deck.length})</h2>
           <div className="card card-back">{state.deck.length ? '🂠' : 'Empty'}</div>
+          <button type="button" className="blind-draw-button" disabled={!canPick || !!state.blindCard || state.deck.length === 0} onClick={() => setState((s) => drawBlind(s))}>Draw blind</button>
         </div>
         <div className="draw-area">
           <h2>Draw area ({state.drawArea.length})</h2>
           <div className="cards">
-            {state.drawArea.map((card) => (
-              <div
-                className={`card${canPick && playableIds.has(card.id) ? ' pickable' : ''}`}
-                key={card.id}
-                draggable={canPick && playableIds.has(card.id)}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/plain', String(card.id))
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  grab.current = { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width }
-                  setDraggedCard(card)
-                }}
-                onDragEnd={clearDrag}
-              >
-                <CardFace top={card.top} bottom={card.bottom} />
-              </div>
-            ))}
+            {state.drawArea.map((card) => renderDrawCard(card, canPick && !state.blindCard && playableIds.has(card.id)))}
           </div>
         </div>
+        {state.blindCard && (
+          <div className="blind-reveal">
+            <h2>Blind draw</h2>
+            {renderDrawCard(state.blindCard, canPick && playableIds.has(state.blindCard.id))}
+            <p>{state.turn === 0 ? 'Place this card.' : `Computer ${state.turn} is placing this card.`}</p>
+          </div>
+        )}
       </section>
 
       {renderSchedule(0)}
       <div className="week-controls">
+        {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
         <p className={`status${state.extraTurns !== null ? ' status-final-turns' : ''}${lastPlay ? ' status-last-play' : ''}`} role="status">
           <span className="status-sparkle" aria-hidden="true">✦</span>
           <span>
@@ -265,10 +284,10 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
                   : noMoves
                     ? `${state.turn === 0 ? 'You have' : `Computer ${state.turn} has`} no eligible placement. Start a new game.`
                     : state.turn === 0
-                      ? 'Your turn: drag a card from the draw area into a day.'
+                      ? state.blindCard ? 'Your blind card is revealed: drag it into your schedule.' : 'Your turn: choose a face-up card or draw blind from the deck.'
                       : `Computer ${state.turn} is picking…`}
             {lastPlay === 'last' && ' Last play of the week!'}
-            {lastPlay === 'possible' && ' This play ends the week unless a fifth-column placement starts final turns.'}
+            {lastPlay === 'possible' && ' Some plays may end the week.'}
             {state.extraTurns !== null && !state.error && !isOver && ` ${state.extraTurns} final ${state.extraTurns === 1 ? 'turn' : 'turns'} remaining.`}
           </span>
         </p>

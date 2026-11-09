@@ -16,7 +16,9 @@ export type GameState = {
   turn: number
   weekStarter: number
   drawStarter: number
-  drawPicks: (Card | null)[]
+  drawPicks: (Card | 'blind' | null)[]
+  blindCard: Card | null
+  blindSkip: { player: number; card: Card } | null
   extraTurns: number | null
   weekComplete: boolean
   bustColumns: (number | null)[]
@@ -66,7 +68,9 @@ export function newGame(numPlayers: number, decks: WeekDecks): GameState {
     turn: 0,
     weekStarter: 0,
     drawStarter: 0,
-    drawPicks: Array<Card | null>(numPlayers).fill(null),
+    drawPicks: Array<Card | 'blind' | null>(numPlayers).fill(null),
+    blindCard: null,
+    blindSkip: null,
     extraTurns: null,
     weekComplete: false,
     bustColumns: Array<number | null>(numPlayers).fill(null),
@@ -135,6 +139,8 @@ export function startNextWeek(state: GameState): GameState {
     weekStarter,
     drawStarter: weekStarter,
     drawPicks: state.starting.map(() => null),
+    blindCard: null,
+    blindSkip: null,
     extraTurns: null,
     weekComplete: false,
     bustColumns: state.bustColumns.map(() => null),
@@ -143,10 +149,10 @@ export function startNextWeek(state: GameState): GameState {
 }
 
 export function playCard(state: GameState, cardId: number, day: number, slot: number): GameState {
-  const card = state.drawArea.find((item) => item.id === cardId)
+  const card = state.blindCard ?? state.drawArea.find((item) => item.id === cardId)
   const player = state.schedules[state.turn]
   if (
-    state.weekComplete || state.gameOver || state.error || !card || !player || !player[day] ||
+    state.weekComplete || state.gameOver || state.error || !card || card.id !== cardId || !player || !player[day] ||
     !canPlace(player, day, slot, card)
   ) return state
 
@@ -169,59 +175,85 @@ export function playCard(state: GameState, cardId: number, day: number, slot: nu
     ...state,
     schedules,
     setAside: replaced ? [...state.setAside, { id: replaced.id, top: replaced.top, bottom: replaced.bottom }] : state.setAside,
-    drawArea: state.drawArea.filter((item) => item.id !== cardId),
+    drawArea: state.blindCard ? state.drawArea : state.drawArea.filter((item) => item.id !== cardId),
+    blindCard: null,
+    blindSkip: state.turn === 0 ? null : state.blindSkip,
     turn: (state.turn + 1) % state.schedules.length,
-    drawPicks: state.drawPicks.map((pick, i) => i === state.turn ? card : pick),
+    drawPicks: state.drawPicks.map((pick, i) => i === state.turn ? state.blindCard ? 'blind' : card : pick),
     extraTurns,
   }
+  return finishTurn(next)
+}
 
+export function drawBlind(state: GameState): GameState {
+  if (state.weekComplete || state.gameOver || state.error || state.blindCard || state.deck.length === 0) return state
+  const [card, ...deck] = state.deck
+  const next = { ...state, deck, blindCard: card, blindSkip: state.turn === 0 ? null : state.blindSkip }
+  if (legalMoves(state.schedules[state.turn], [card]).length > 0) return next
+  return finishTurn({
+    ...next,
+    blindCard: null,
+    blindSkip: { player: state.turn, card },
+    setAside: [...state.setAside, card],
+    turn: (state.turn + 1) % state.schedules.length,
+    drawPicks: state.drawPicks.map((pick, i) => i === state.turn ? 'blind' : pick),
+    extraTurns: state.extraTurns === null ? null : state.extraTurns - 1,
+  })
+}
+
+function finishTurn(next: GameState): GameState {
+  const extraTurns = next.extraTurns
   if (extraTurns === 0) return finishWeek(next)
-  if (next.drawArea.length > 1) return next
+  if (extraTurns !== null && next.drawArea.length + next.deck.length < extraTurns) {
+    return { ...next, error: 'Not enough cards for the remaining extra turns. Add more cards to the deck and start a new game.' }
+  }
+  if (next.drawPicks.some((pick) => pick === null)) return next
 
-  const count = state.schedules.length + 1 - next.drawArea.length
+  const count = next.schedules.length + 1 - next.drawArea.length
   if (next.deck.length < count) {
     if (extraTurns !== null) {
       const available = [...next.drawArea, ...next.deck]
       if (available.length < extraTurns) {
         return { ...next, error: 'Not enough cards for the remaining extra turns. Add more cards to the deck and start a new game.' }
       }
-      return { ...next, deck: [], drawArea: available }
+      return { ...next, deck: [], drawArea: available, drawPicks: next.drawPicks.map(() => null), drawStarter: next.turn }
     }
     return finishWeek(next)
   }
 
   const picks = next.drawPicks
-  const pickedCards = picks.filter((pick): pick is Card => pick !== null)
+  const pickedCards = picks.filter((pick): pick is Card => pick !== null && pick !== 'blind')
   const minimumSum = Math.min(...pickedCards.map((pick) => pick.top + pick.bottom))
   const minimumNumber = Math.min(...pickedCards
     .filter((pick) => pick.top + pick.bottom === minimumSum)
     .map((pick) => Math.min(pick.top, pick.bottom)))
   const nextStarter = Array.from({ length: picks.length }, (_, i) =>
-    (state.drawStarter + i + 1) % picks.length,
+    (next.drawStarter + i + 1) % picks.length,
   ).find((player) => {
     const pick = picks[player]
-    return pick !== null && pick.top + pick.bottom === minimumSum &&
+    return pick !== null && pick !== 'blind' && pick.top + pick.bottom === minimumSum &&
       Math.min(pick.top, pick.bottom) === minimumNumber
   })
-  if (nextStarter === undefined) {
-    return { ...next, error: 'Cannot determine the next starting player: no cards were picked.' }
-  }
+  const starter = nextStarter ?? (next.drawStarter + 1) % picks.length
 
   return {
     ...next,
     drawArea: [...next.drawArea, ...next.deck.slice(0, count)],
     deck: next.deck.slice(count),
-    turn: extraTurns === null ? nextStarter : next.turn,
-    drawStarter: extraTurns === null ? nextStarter : next.turn,
-    drawPicks: state.drawPicks.map(() => null),
+    turn: extraTurns === null ? starter : next.turn,
+    drawStarter: extraTurns === null ? starter : next.turn,
+    drawPicks: next.drawPicks.map(() => null),
   }
 }
 
 export function lastPlayStatus(state: GameState): 'last' | 'possible' | null {
   if (state.weekComplete || state.gameOver || state.error) return null
-  const moves = legalMoves(state.schedules[state.turn], state.drawArea)
-  if (moves.length === 0) return null
+  const moves = legalMoves(state.schedules[state.turn], state.blindCard ? [state.blindCard] : state.drawArea)
+  if (moves.length === 0) return !state.blindCard && state.deck.length > 0 && state.extraTurns === 1 ? 'last' : null
   const endingMoves = moves.filter((move) => playCard(state, move.card.id, move.day, move.slot).weekComplete).length
-  if (endingMoves === 0) return null
-  return endingMoves === moves.length ? 'last' : 'possible'
+  const blindMayEnd = !state.blindCard && state.deck.length > 0 && state.extraTurns === null &&
+    state.drawPicks.every((pick, i) => i === state.turn || pick !== null) &&
+    state.deck.length - 1 < state.schedules.length + 1 - state.drawArea.length
+  if (endingMoves === 0) return blindMayEnd ? 'possible' : null
+  return endingMoves === moves.length && (state.blindCard || state.deck.length === 0 || state.extraTurns === 1) ? 'last' : 'possible'
 }

@@ -114,6 +114,11 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .play-area { display: flex; gap: 1.2rem; align-items: flex-start; background: #f5eddf; }
 .play-area h2 { margin-bottom: 0.7rem; }
 .draw-area { flex: 1; min-width: 0; }
+.blind-draw-button { display: block; width: var(--card-w); margin-top: 0.5rem; padding-inline: 0.25rem; }
+.blind-draw-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.blind-reveal { flex: 0 0 var(--card-w); }
+.blind-reveal p { margin-top: 0.5rem; color: var(--purple); font-size: 0.8rem; font-weight: 700; }
+.blind-notice { margin: 0 0 0.75rem; padding: 0.8rem 1rem; border: 1px solid #e3c66e; border-radius: 10px; background: #fff7dd; color: #674b11; font-weight: 700; }
 .cards { display: flex; flex-wrap: wrap; gap: 0.55rem; min-height: 100px; padding: 0.6rem; border: 1px dashed #ceb995; border-radius: 10px; background: #fffaf0; }
 .card { width: var(--card-w); aspect-ratio: 5 / 7; flex-shrink: 0; padding: 0.5rem; border: 2px solid #d1b76f; border-radius: 9px; background: #fffdf7; color: #43224f; box-shadow: 0 3px 7px #3b233520; display: flex; flex-direction: column; justify-content: space-between; gap: 0.25rem; }
 .card-face { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; font-size: 2rem; font-weight: 900; }
@@ -166,7 +171,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .game-header { align-items: flex-start; }
   .game-header h1 { font-size: 1.8rem; }
   .week-badge { min-width: 105px; padding: 0.55rem; }
-  .play-area { gap: 0.6rem; padding: 0.8rem; }
+  .play-area { flex-wrap: wrap; gap: 0.6rem; padding: 0.8rem; }
   .cards { gap: 0.35rem; }
   .setup-card { padding: 1.5rem 1rem; }
 }
