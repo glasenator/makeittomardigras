@@ -1,16 +1,16 @@
 :root {
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-  color: #36234a;
-  background: #f9f4e9;
+  color: #f9edc9;
+  background: #111014;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --purple: #50236d;
-  --deep-purple: #321341;
-  --green: #17684d;
-  --gold: #d7a62f;
-  --cream: #fffaf0;
-  --border: #dfd0b1;
+  --purple: #a64de0;
+  --deep-purple: #35134c;
+  --green: #18a879;
+  --gold: #f4c744;
+  --cream: #fff2ca;
+  --border: #5e4d67;
 }
 
 * { box-sizing: border-box; }
@@ -18,8 +18,8 @@ body { margin: 0; min-width: 320px; }
 body::before {
   content: "";
   display: block;
-  height: 7px;
-  background: linear-gradient(90deg, #55236f 0 33.33%, #20805c 33.33% 66.66%, #e0ad36 66.66%);
+  height: 8px;
+  background: repeating-linear-gradient(90deg, #8b37bd 0 28px, #f4c744 28px 34px, #13815d 34px 62px, #f4c744 62px 68px);
 }
 #root { min-height: calc(100svh - 7px); }
 button { font: inherit; }

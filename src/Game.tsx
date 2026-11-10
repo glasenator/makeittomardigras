@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { makeDecks, type Card, type WeekDecks } from './deck'
 import { canPlace, completedWeekTotals, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, tuesdayCardCount, WEEKS, winningPlayers } from './gameLogic'
 import { activeValues, backValues, scheduleTotals } from './scheduleTotals'
 import { formatValue } from './formatValue'
+import cardDealUrl from './assets/carddeal.m4a'
+import shuffleUrl from './assets/shuffle.m4a'
+import placeUrl from './assets/place.m4a'
+import flipUrl from './assets/flip.m4a'
+import bustUrl from './assets/bust.m4a'
 import RulesButton from './RulesButton'
 import WalkthroughButton from './WalkthroughButton'
 import { chooseBlindDraw, chooseComputerMove, chooseFlipTarget, type Difficulty } from './computerPlayer'
@@ -36,28 +41,143 @@ function CardFace({ top, bottom, horizontal = false }: { top: ReactNode; bottom:
   )
 }
 
-type Props = { numPlayers: number; difficulty: Difficulty; onExit: () => void }
+type Props = { numPlayers: number; difficulty: Difficulty; onExit: () => void; audioEnabled: boolean }
 
 function shuffledDecks(): WeekDecks {
   const [first, second, third] = makeDecks()
   return [shuffle(first), shuffle(second), shuffle(third)]
 }
 
-function Game({ numPlayers, difficulty, onExit }: Props) {
+function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
   const [state, setState] = useState(() => newGame(numPlayers, shuffledDecks()))
+  const previousDealState = useRef<typeof state | null>(null)
+  const dealSounds = useRef({ remaining: 0, timer: 0 })
+  const deckCardRef = useRef<HTMLDivElement>(null)
+  const drawCardRefs = useRef(new Map<number, HTMLDivElement>())
+  const scheduleCardRefs = useRef(new Map<number, HTMLDivElement>())
+  const previousFaceDownStates = useRef<Map<number, boolean> | null>(null)
+  const [dealingCardIds, setDealingCardIds] = useState<number[]>([])
 
-  const grab = useRef({ x: 0, y: 0, w: 0 }) // cursor offset within the dragged card
-  const touchDrag = useRef<{ pointerId: number; card: Card; startX: number; startY: number; offsetX: number; offsetY: number; active: boolean } | null>(null)
+  const touchDrag = useRef<{ pointerId: number; card: Card; startX: number; startY: number; lastX: number; lastY: number; lastTime: number; offsetX: number; offsetY: number; active: boolean } | null>(null)
   const suppressCardClick = useRef(false)
   const scheduleRef = useRef<HTMLDivElement>(null)
   const gameOverHeading = useRef<HTMLHeadingElement>(null)
   const [draggedCard, setDraggedCard] = useState<Card | null>(null)
+  const [dragPreview, setDragPreview] = useState<{ card: Card; left: number; top: number; rotation: number; tiltX: number; tiltY: number; scale: number } | null>(null)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [hover, setHover] = useState<{ day: number; slot: number } | null>(null)
 
+  useEffect(() => {
+    const previous = previousDealState.current
+    previousDealState.current = state
+
+    const previousDrawIds = new Set(previous?.drawArea.map((card) => card.id) ?? [])
+    const dealSources = previous
+      ? [...previous.deck, ...(state.week !== previous.week ? previous.futureDecks[0] ?? [] : [])]
+      : []
+    const dealSourceIds = new Set(dealSources.map((card) => card.id))
+    const dealtCards = previous
+      ? state.drawArea.filter((card) => !previousDrawIds.has(card.id) && dealSourceIds.has(card.id))
+      : state.drawArea
+    setDealingCardIds(dealtCards.map((card) => card.id))
+
+    if (audioEnabled && previous && state.week > previous.week) {
+      const audio = new Audio(shuffleUrl)
+      audio.volume = 0.5
+      void audio.play().catch((error: unknown) => console.warn('Unable to play the shuffle sound.', error))
+    }
+
+    if (audioEnabled && previous && !previous.weekComplete && state.weekComplete && state.bustColumns[0] !== null) {
+      const audio = new Audio(bustUrl)
+      audio.volume = 0.5
+      void audio.play().catch((error: unknown) => console.warn('Unable to play the bust sound.', error))
+    }
+
+    if (!audioEnabled || dealtCards.length === 0) return
+
+    dealSounds.current.remaining += dealtCards.length
+    const playNextDealSound = () => {
+      dealSounds.current.timer = 0
+      if (dealSounds.current.remaining === 0) return
+
+      dealSounds.current.remaining -= 1
+      const audio = new Audio(cardDealUrl)
+      audio.volume = 0.28
+      void audio.play().catch((error: unknown) => console.warn('Unable to play the card deal sound.', error))
+
+      if (dealSounds.current.remaining > 0) {
+        dealSounds.current.timer = window.setTimeout(playNextDealSound, 120)
+      }
+    }
+
+    if (!dealSounds.current.timer) playNextDealSound()
+  }, [audioEnabled, state])
+
+  useLayoutEffect(() => {
+    const currentFaceDownStates = new Map(
+      state.schedules.flatMap((schedule) => schedule.flatMap((column) =>
+        column.filter((card): card is NonNullable<typeof card> => card !== null).map((card) => [card.id, card.faceDown === true] as const),
+      )),
+    )
+    const previous = previousFaceDownStates.current
+    previousFaceDownStates.current = currentFaceDownStates
+    if (!previous || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    for (const [id, faceDown] of currentFaceDownStates) {
+      if (previous.get(id) === undefined || previous.get(id) === faceDown) continue
+      const card = scheduleCardRefs.current.get(id)
+      if (!card) continue
+      const horizontal = card.classList.contains('horizontal-card')
+      const positionTransform = horizontal ? '' : ' translateX(-50%)'
+      card.animate(
+        [
+          { transform: `perspective(700px) rotateY(180deg)${positionTransform}` },
+          { transform: `perspective(700px) rotateY(90deg)${positionTransform}`, offset: 0.5 },
+          { transform: `perspective(700px) rotateY(0deg)${positionTransform}` },
+        ],
+        { duration: 460, easing: 'ease-in-out' },
+      )
+    }
+  }, [state])
+
+  useLayoutEffect(() => {
+    if (dealingCardIds.length === 0) return
+    const source = deckCardRef.current?.getBoundingClientRect()
+    if (!source || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    dealingCardIds.forEach((id, index) => {
+      const card = drawCardRefs.current.get(id)
+      if (!card) return
+      const target = card.getBoundingClientRect()
+      const deltaX = source.left + source.width / 2 - (target.left + target.width / 2)
+      const deltaY = source.top + source.height / 2 - (target.top + target.height / 2)
+      const rotation = deltaX < 0 ? -9 : 9
+      card.animate(
+        [
+          { transform: `translate(${deltaX}px, ${deltaY}px) scale(0.7) rotate(${rotation}deg)`, opacity: 0.35 },
+          { transform: 'translate(0, 0) scale(1) rotate(0)', opacity: 1 },
+        ],
+        { duration: 420, delay: index * 110, easing: 'cubic-bezier(0.2, 0.75, 0.25, 1)' },
+      )
+    })
+  }, [dealingCardIds])
+
   const clearDrag = useCallback(() => {
     setDraggedCard(null)
+    setDragPreview(null)
     setHover(null)
+  }, [])
+
+  const moveDragPreview = useCallback((card: Card, left: number, top: number, deltaX: number, deltaY: number, elapsed: number) => {
+    const speedX = deltaX / elapsed
+    const speedY = deltaY / elapsed
+    const speed = Math.hypot(speedX, speedY)
+    const clampAngle = (angle: number) => Math.max(-30, Math.min(30, angle))
+    const rotation = clampAngle(speedX * 3 + speedY)
+    const tiltX = clampAngle(-speedY * 2.5)
+    const tiltY = clampAngle(speedX * 2.5)
+    const scale = 1.1 + Math.min(speed / 900, 0.14)
+    setDragPreview({ card, left, top, rotation, tiltX, tiltY, scale })
   }, [])
 
   const isOver = state.gameOver
@@ -71,10 +191,30 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
 
   const canPick = state.turn === 0 && !state.pendingFlip && !state.weekComplete && !isOver && !state.error && !noMoves
 
-  const pick = useCallback((card: Card, day: number, slot: number) => {
+  useEffect(() => {
+    if (state.turn === 0 && state.blindCard) setSelectedCard(state.blindCard)
+  }, [state.blindCard, state.turn])
+
+  const pick = useCallback((card: Card, day: number, slot: number, human = false) => {
+    if (human && audioEnabled && state.turn === 0 && canPlace(state.schedules[0], day, slot, card)) {
+      const audio = new Audio(placeUrl)
+      audio.volume = 0.5
+      void audio.play().catch((error: unknown) => console.warn('Unable to play the card placement sound.', error))
+    }
     setState((s) => playCard(s, card.id, day, slot))
     setSelectedCard(null)
-  }, [])
+  }, [audioEnabled, state])
+
+  const flipPlayerCard = useCallback((day: number, slot: number) => {
+    const isPlayerFlip = state.pendingFlip?.player === 0 &&
+      flipTargets(state).some((target) => target.day === day && target.slot === slot)
+    if (isPlayerFlip && audioEnabled) {
+      const audio = new Audio(flipUrl)
+      audio.volume = 0.5
+      void audio.play().catch((error: unknown) => console.warn('Unable to play the card flip sound.', error))
+    }
+    setState((s) => flipCard(s, day, slot))
+  }, [audioEnabled, state])
 
   const spotAtPosition = useCallback((clientX: number, clientY: number, card: Card, offsetX: number, offsetY: number) => {
     const daysContainer = scheduleRef.current
@@ -105,6 +245,18 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
         setDraggedCard(drag.card)
       }
       event.preventDefault()
+      const now = performance.now()
+      moveDragPreview(
+        drag.card,
+        event.clientX - drag.offsetX,
+        event.clientY - drag.offsetY,
+        event.clientX - drag.lastX,
+        event.clientY - drag.lastY,
+        Math.max(1, now - drag.lastTime),
+      )
+      drag.lastX = event.clientX
+      drag.lastY = event.clientY
+      drag.lastTime = now
       const spot = spotAtPosition(event.clientX, event.clientY, drag.card, drag.offsetX, drag.offsetY)
       setHover(spot)
     }
@@ -113,7 +265,7 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       if (!drag || drag.pointerId !== event.pointerId) return
       if (drag.active) {
         const spot = spotAtPosition(event.clientX, event.clientY, drag.card, drag.offsetX, drag.offsetY)
-        if (spot && canPick) pick(drag.card, spot.day, spot.slot)
+        if (spot && canPick) pick(drag.card, spot.day, spot.slot, true)
         clearDrag()
         window.setTimeout(() => { suppressCardClick.current = false }, 0)
       }
@@ -143,7 +295,7 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       window.removeEventListener('drop', clearDrag)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  }, [canPick, clearDrag, pick, spotAtPosition])
+  }, [canPick, clearDrag, moveDragPreview, pick, spotAtPosition])
 
   useEffect(() => {
     if (state.weekComplete || isOver || state.error || noMoves || state.turn === 0) return
@@ -160,51 +312,17 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       }
       const move = chooseComputerMove(state, difficulty)
       if (!move) throw new Error('Computer turn has no eligible move.')
-      pick(move.card, move.day, move.slot)
+      pick(move.card, move.day, move.slot, false)
     }, 800)
     return () => clearTimeout(t)
   }, [state, isOver, noMoves, pick, difficulty])
-
-  const spotAt = (e: DragEvent<HTMLDivElement>) => {
-    const cardLeft = e.clientX - grab.current.x
-    const cardTop = e.clientY - grab.current.y
-    const days = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('.day-inner'))
-    const cardW = days[0].getBoundingClientRect().width
-    const centerX = cardLeft + cardW / 2
-    const day = days.findIndex((el) => {
-      const r = el.getBoundingClientRect()
-      return centerX >= r.left && centerX <= r.right
-    })
-    if (day < 0) return null
-    const rect = days[day].getBoundingClientRect()
-    const slotH = rect.height / 4
-    const slot = Math.min(Math.max(Math.round((cardTop - rect.top) / slotH), 0), draggedCard?.orientation === 'horizontal' ? SLOTS : SLOTS - 1)
-    const player = state.schedules[0]
-    return draggedCard && canPlace(player, day, slot, draggedCard) ? { day, slot } : null
-  }
-
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const spot = spotAt(e)
-    const id = Number(e.dataTransfer.getData('text/plain'))
-    const card = (state.blindCard ? [state.blindCard] : state.drawArea).find((c) => c.id === id)
-    if (card && canPick && spot) pick(card, spot.day, spot.slot)
-    clearDrag()
-  }
-
-  const onDragOver = (e: DragEvent<HTMLDivElement>) => {
-    const spot = spotAt(e)
-    if (!spot) return setHover(null)
-    e.preventDefault()
-    setHover(spot)
-  }
 
   const onScheduleTap = (event: MouseEvent<HTMLDivElement>, day: number) => {
     if (!canPick || !selectedCard) return
     const rect = event.currentTarget.getBoundingClientRect()
     const slot = Math.min(Math.max(Math.floor((event.clientY - rect.top) / (rect.height / 4)), 0),
       selectedCard.orientation === 'horizontal' ? SLOTS : SLOTS - 1)
-    if (canPlace(state.schedules[0], day, slot, selectedCard)) pick(selectedCard, day, slot)
+    if (canPlace(state.schedules[0], day, slot, selectedCard)) pick(selectedCard, day, slot, true)
   }
 
   const renderSchedule = (i: number) => {
@@ -221,7 +339,12 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
             <h2 className={i === state.turn && !state.weekComplete ? 'active' : ''}>
               {i === 0 ? 'Your' : `Computer ${i}'s`} Schedule
             </h2>
-            {i === 0 && <strong className="carnival-points" aria-live="polite">Carnival points: {totals.points}</strong>}
+            {i === 0 && (
+              <div className="carnival-points" aria-live="polite">
+                <span>Carnival<br />points:</span>
+                <strong className="carnival-points-score">{totals.points}</strong>
+              </div>
+            )}
           </div>
           {i !== 0 && <strong className="computer-carnival-points" aria-live="polite">Carnival points: {totals.points}</strong>}
           {i === 0 && !isOver && (
@@ -246,9 +369,6 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
           <div
             className={`days${state.week === WEEKS ? ' final-week' : ''}`}
             ref={i === 0 ? scheduleRef : undefined}
-            onDragOver={i === 0 && canPick ? onDragOver : undefined}
-            onDragLeave={i === 0 ? () => setHover(null) : undefined}
-            onDrop={i === 0 ? onDrop : undefined}
           >
             {DAYS.map((day, d) => (
               <div key={day} className={`day${state.week === WEEKS && d === DAYS.length - 1 ? ' mardi-gras-day' : ''}${bust !== null && d >= bust ? ' busted-day' : ''}`}>
@@ -272,6 +392,10 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
                       : card.faceDown ? 'face-down card, counts as zero' : undefined
                     return (
                       <div
+                        ref={(element) => {
+                          if (element) scheduleCardRefs.current.set(card.id, element)
+                          else scheduleCardRefs.current.delete(card.id)
+                        }}
                         className={`card slotted${horizontal ? ' horizontal-card' : ''}${card.faceDown && !values ? ' card-back' : ''}${positiveBack ? ' positive-back' : ''}${!card.faceDown && card.top < 0 && card.bottom < 0 ? ' double-negative-card' : ''}${target ? ' flip-target' : ''}`}
                         style={{ '--slot': row, zIndex: card.sequence ?? card.placedAt } as CSSProperties}
                         key={card.id}
@@ -280,16 +404,16 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
                         aria-label={target ? `Flip ${DAYS[d]} ${horizontal ? `horizontal row ${row + 1}` : ['top', 'middle', 'bottom'][row]} card ${card.faceDown ? 'face up' : 'face down'}${description ? `; ${description}` : ''}` : partiallyBusted ? `Horizontal card: ${DAYS[d + 1]} section is busted and counts as zero${description ? `; ${description}` : ''}` : busted ? `Card in busted column, counts as zero${description ? `; ${description}` : ''}` : description}
                         onClick={target ? (event) => {
                           event.stopPropagation()
-                          setState((s) => flipCard(s, d, slot))
+                          flipPlayerCard(d, slot)
                         } : undefined}
                         onKeyDown={target ? (event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault()
-                            setState((s) => flipCard(s, d, slot))
+                            flipPlayerCard(d, slot)
                           }
                         } : undefined}
                       >
-                        {values ? <CardFace top={values.top} bottom={values.bottom} horizontal={horizontal} /> : '🂠'}
+                        {values ? <CardFace top={values.top} bottom={values.bottom} horizontal={horizontal} /> : <hr className="card-back-divider" aria-hidden="true" />}
                       </div>
                     )
                   })}
@@ -393,9 +517,13 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
   const topBack = topCard ? backValues(topCard) : null
   const renderDrawCard = (card: Card, enabled: boolean) => (
     <div
-      className={`card${card.orientation === 'horizontal' ? ' horizontal-card' : ''}${card.top < 0 && card.bottom < 0 ? ' double-negative-card' : ''}${enabled ? ' pickable' : ''}${selectedCard?.id === card.id ? ' selected-for-play' : ''}`}
+      ref={(element) => {
+        if (element) drawCardRefs.current.set(card.id, element)
+        else drawCardRefs.current.delete(card.id)
+      }}
+      className={`card${card.orientation === 'horizontal' ? ' horizontal-card' : ''}${card.top < 0 && card.bottom < 0 ? ' double-negative-card' : ''}${enabled ? ' pickable' : ''}${selectedCard?.id === card.id ? ' selected-for-play' : ''}${draggedCard?.id === card.id ? ' drag-source' : ''}`}
       key={card.id}
-      draggable={enabled}
+      draggable={false}
       role={enabled ? 'button' : undefined}
       tabIndex={enabled ? 0 : undefined}
       aria-pressed={enabled ? selectedCard?.id === card.id : undefined}
@@ -407,17 +535,21 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
         setSelectedCard((selected) => selected?.id === card.id ? null : card)
       } : undefined}
       onPointerDown={enabled ? (event) => {
-        if (event.pointerType !== 'touch') return
+        if (event.button !== 0) return
         const rect = event.currentTarget.getBoundingClientRect()
         touchDrag.current = {
           pointerId: event.pointerId,
           card,
           startX: event.clientX,
           startY: event.clientY,
+          lastX: event.clientX,
+          lastY: event.clientY,
+          lastTime: performance.now(),
           offsetX: event.clientX - rect.left,
           offsetY: event.clientY - rect.top,
           active: false,
         }
+        event.currentTarget.setPointerCapture(event.pointerId)
       } : undefined}
       onKeyDown={enabled ? (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -425,14 +557,6 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
           setSelectedCard((selected) => selected?.id === card.id ? null : card)
         }
       } : undefined}
-      onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', String(card.id))
-        const rect = e.currentTarget.getBoundingClientRect()
-        grab.current = { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width }
-        setSelectedCard(null)
-        setDraggedCard(card)
-      }}
-      onDragEnd={clearDrag}
     >
       <CardFace top={card.top} bottom={card.bottom} horizontal={card.orientation === 'horizontal'} />
     </div>
@@ -459,10 +583,11 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
         <div className="deck-pile">
           <h2>Deck ({state.deck.length})</h2>
           <div
+            ref={deckCardRef}
             className={`card${topBack ? ` positive-back${topCard.orientation === 'horizontal' ? ' horizontal-card' : ''}` : ' card-back'}`}
             aria-label={topBack ? `Top of deck: positive back ${formatValue(topBack.top)}, ${formatValue(topBack.bottom)}${topCard.orientation === 'horizontal' ? ', horizontal' : ''}` : state.deck.length ? 'Top of deck: blank card back' : 'Deck empty'}
           >
-            {topBack ? <CardFace top={topBack.top} bottom={topBack.bottom} horizontal={topCard.orientation === 'horizontal'} /> : state.deck.length ? '🂠' : 'Empty'}
+            {topBack ? <CardFace top={topBack.top} bottom={topBack.bottom} horizontal={topCard.orientation === 'horizontal'} /> : state.deck.length ? <hr className="card-back-divider" aria-hidden="true" /> : 'Empty'}
           </div>
           <button type="button" className="blind-draw-button" disabled={!canPick || !!state.blindCard || state.deck.length === 0} onClick={() => setState((s) => drawBlind(s))}>Draw blind</button>
         </div>
@@ -482,6 +607,22 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       </section>
 
       {renderSchedule(0)}
+      {dragPreview && (
+        <div
+          className={`card drag-preview${dragPreview.card.orientation === 'horizontal' ? ' horizontal-card' : ''}${dragPreview.card.top < 0 && dragPreview.card.bottom < 0 ? ' double-negative-card' : ''}`}
+          aria-hidden="true"
+          style={{
+            left: dragPreview.left,
+            top: dragPreview.top,
+            '--drag-rotation': `${dragPreview.rotation}deg`,
+            '--drag-tilt-x': `${dragPreview.tiltX}deg`,
+            '--drag-tilt-y': `${dragPreview.tiltY}deg`,
+            '--drag-scale': dragPreview.scale,
+          } as CSSProperties}
+        >
+          <CardFace top={dragPreview.card.top} bottom={dragPreview.card.bottom} horizontal={dragPreview.card.orientation === 'horizontal'} />
+        </div>
+      )}
     </main>
   )
 }

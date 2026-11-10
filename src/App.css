@@ -41,7 +41,6 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .primary-button span { color: #f2d16d; padding-left: 0.3rem; }
 .start-footer { margin-top: 1.6rem; color: #8f7e82; font-size: 0.65rem; font-weight: 900; letter-spacing: 0.18em; }
 .start-footer span { color: var(--gold); padding: 0 0.35rem; }
-
 .game { --card-h: calc(var(--card-w) * 2); max-width: 1600px; padding: 1.25rem 1rem; }
 .game-header { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.25rem; text-align: center; }
 .game-header h1 { color: var(--deep-purple); font: 800 clamp(2.6rem, 5vw, 4rem)/1.1 Georgia, serif; letter-spacing: -0.035em; }
@@ -74,10 +73,11 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .schedule-controls .blind-notice { margin: 0; text-align: center; }
 .schedule-controls .busted-message { margin: 0; color: #9c3d35; font-weight: 700; text-align: center; }
 .your-schedule .schedule-heading { display: grid; grid-template-columns: minmax(max-content, 1fr) minmax(0, 999fr) minmax(max-content, 1fr); align-items: stretch; gap: 0.75rem; }
-.your-schedule .schedule-title { grid-column: 1; width: max-content; max-width: 100%; }
+.your-schedule .schedule-title { grid-column: 1; width: 100%; max-width: 100%; }
 .your-schedule .schedule-title { display: flex; flex-direction: column; align-items: flex-start; }
-.your-schedule .schedule-title h2 { font-size: 1.25rem; }
-.your-schedule .schedule-title .carnival-points { margin-top: auto; }
+.your-schedule .schedule-title h2 { margin-bottom: 0; font-size: 1.25rem; }
+.your-schedule .schedule-title .carnival-points { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 0; padding: 0.25rem 0.4rem; }
+.your-schedule .carnival-points-score { font-size: 1.4em; line-height: 1; }
 .your-schedule .schedule-controls { grid-column: 2; grid-row: 1; justify-self: stretch; align-self: start; width: 100%; max-width: none; margin-top: -4px; }
 .your-schedule .schedule-controls .status { width: fit-content; max-width: 100%; padding: 0.4rem 0.6rem; }
 .your-schedule .schedule-tools { grid-column: 3; grid-row: 1; justify-self: end; display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem; }
@@ -116,7 +116,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .your-schedule > .player-row { margin-top: 0.5rem; }
 .schedule-zone.active-player { border: 2px solid var(--green); box-shadow: 0 0 0 3px #17684d30, 0 5px 18px #54371714, inset 4px 0 var(--green); }
 .game > .your-schedule { max-width: 1150px; margin-inline: auto; }
-.game > .play-area { max-width: 900px; margin-inline: auto; }
+.game > .play-area { max-width: 1150px; margin-inline: auto; }
 .computer-schedules { display: flex; gap: 0.65rem; overflow-x: auto; padding-bottom: 0.25rem; }
 .computer-schedule { --card-w: 50px; --card-h: calc(var(--card-w) * 2); --day-padding: 0.12rem; flex: 0 0 max-content; }
 .computer-schedule:first-child { margin-left: auto; }
@@ -189,9 +189,28 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .computer-schedule .flip-arrows { font-size: 0.55rem; }
 .card.flip-target { cursor: pointer; outline: 4px solid #16845d; outline-offset: 2px; box-shadow: 0 0 0 6px #bde8cf; }
 .card.flip-target:focus-visible { outline: 4px solid #6c2f88; outline-offset: 4px; }
-.card.pickable { cursor: grab; transition: transform 0.15s, box-shadow 0.15s; }
+.card.pickable { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; transition: transform 0.15s, box-shadow 0.15s; }
 .card.pickable:hover { transform: translateY(-6px); box-shadow: 0 8px 14px #43224f35; border-color: var(--green); }
-.card-back { align-items: center; justify-content: center; border: 3px solid #d2a93e; background: repeating-linear-gradient(45deg, #4f2268 0 9px, #61317a 9px 18px); color: #f7df95; font-size: 3rem; }
+.card.pickable.drag-source { visibility: hidden; }
+.drag-preview {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  margin: 0;
+  transform:
+    perspective(700px)
+    rotateX(var(--drag-tilt-x))
+    rotateY(var(--drag-tilt-y))
+    rotate(var(--drag-rotation))
+    translateY(-14px)
+    scale(var(--drag-scale));
+  transform-origin: center;
+  transition: transform 35ms ease-out;
+  box-shadow: 0 20px 38px #000d, 0 0 0 5px #f4c744cc, 0 0 28px #a64de0aa;
+}
+.card-back { align-items: center; justify-content: center; border: 3px solid #d2a93e; background: repeating-linear-gradient(45deg, #4f2268 0 9px, #61317a 9px 18px); color: #f7df95; }
+.card-back-divider { width: 85%; height: 3px; margin: 0; border: 0; border-radius: 2px; background: #f4cf4c; box-shadow: 0 1px #fff8df; }
+.card-back.horizontal-card .card-back-divider { width: 3px; height: 85%; }
 .positive-back { border-color: #fff; background: repeating-linear-gradient(45deg, #4f2268 0 9px, #61317a 9px 18px); color: #fff; }
 .positive-back .card-face hr { background: #fff; }
 .double-negative-card { border-color: #4f2268; background: repeating-linear-gradient(45deg, #fff 0 9px, #e9dff0 9px 18px); color: #4f2268; }
@@ -249,7 +268,6 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .computer-schedule .computer-carnival-points { padding: 0.15rem 0.25rem; font-size: 0.62rem; }
   .computer-schedule .player-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; max-width: 100%; overflow: hidden; }
   .computer-schedule .days { grid-column: 1 / -1; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; overflow-x: auto; }
-  .card.pickable { touch-action: none; user-select: none; -webkit-user-select: none; }
   .game-header { align-items: center; }
   .game-header { margin-bottom: 0.5rem; }
   .game-header h1 { font-size: clamp(1.7rem, 8vw, 2.4rem); }
@@ -271,6 +289,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .schedule-zone { padding: 0.65rem; }
   .schedule-zone h2 { font-size: 0.78rem; }
   .carnival-points { min-height: 32px; padding: 0.25rem 0.35rem; font-size: 0.68rem; }
+  .your-schedule .carnival-points-score { font-size: 1.35em; }
   .start-next-week { min-height: 32px; }
   .week-badge { min-width: 105px; padding: 0.55rem; }
   .player-row { gap: 0.3rem; }
@@ -290,6 +309,15 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .week-controls { margin-bottom: 0.5rem; }
   .status { gap: 0.4rem; margin-bottom: 0.5rem; padding: 0.55rem; font-size: 0.78rem; }
   .setup-card { padding: 1.5rem 1rem; }
+}
+
+@media (min-width: 951px) {
+  .your-schedule .schedule-title .carnival-points {
+    flex: 1;
+    justify-content: space-between;
+    padding: 0.25rem 0.4rem;
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 700px) and (orientation: portrait) {
@@ -326,10 +354,11 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .game > .your-schedule { grid-column: 2; align-self: start; max-width: none; margin: 0; padding: 0.45rem; }
   .schedule-heading { align-items: center; gap: 0.25rem; }
   .your-schedule .schedule-heading { grid-template-columns: minmax(max-content, 1fr) minmax(0, 999fr) minmax(max-content, 1fr); gap: 0.25rem; }
-  .your-schedule .schedule-title { width: max-content; max-width: 100%; }
+  .your-schedule .schedule-title { width: 100%; max-width: 100%; }
   .your-schedule .schedule-tools { justify-self: end; }
-  .your-schedule .schedule-title h2 { margin-bottom: 0.15rem; font-size: 0.8rem; }
+  .your-schedule .schedule-title h2 { font-size: 0.8rem; }
   .carnival-points { min-height: 27px; padding: 0.15rem 0.25rem; font-size: 0.55rem; }
+  .your-schedule .carnival-points-score { font-size: 1.3em; }
   .your-schedule .schedule-tools .week-badge { min-width: 70px; padding: 0.2rem; }
   .schedule-heading .week-badge span { font-size: 0.4rem; }
   .schedule-heading .week-badge strong { margin-top: 0.05rem; font-size: 0.8rem; }
@@ -383,4 +412,323 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .player-options { margin-block: 0.7rem 0.5rem; }
   .start-actions { margin-top: 0.8rem; }
   .start-footer { margin-top: 0.8rem; }
+}
+
+/* Retro carnival table theme */
+body {
+  color: #f9edc9;
+  background-color: #111014;
+  background-image: radial-gradient(#ffffff08 0.7px, transparent 0.7px);
+  background-size: 5px 5px;
+}
+
+button {
+  border: 2px solid #806c8b;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #33293a, #241d2a);
+  box-shadow: 0 3px 0 #120e15, inset 0 1px #ffffff12;
+  color: #f9edc9;
+  text-shadow: 0 1px #151018;
+}
+
+button:hover {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #47304f, #302238);
+}
+
+button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
+.eyebrow { color: var(--gold); text-shadow: 0 0 12px #f4c74440; }
+
+.start {
+  background:
+    radial-gradient(ellipse at 50% 38%, #4b1f5b88, transparent 58%),
+    radial-gradient(circle at 12% 18%, #f4c74455 0 2px, transparent 3px),
+    radial-gradient(circle at 85% 22%, #19a87966 0 3px, transparent 4px),
+    radial-gradient(circle at 16% 78%, #a64de066 0 3px, transparent 4px),
+    radial-gradient(circle at 81% 76%, #f4c74455 0 2px, transparent 3px),
+    linear-gradient(145deg, #17131b, #101916 55%, #1d1421);
+}
+
+.hero-ornament { color: var(--gold); text-shadow: 0 0 18px #f4c74480; }
+.hero-ornament span {
+  border: 3px solid var(--gold);
+  border-radius: 12px;
+  background: linear-gradient(145deg, #3c1b50, #17271f);
+  box-shadow: 0 0 0 4px #f4c7441a, 0 5px 0 #09080b, 0 0 24px #a64de044;
+  color: #f9edc9;
+}
+.start h1, .game-header h1, .game-over-header h1 {
+  color: #fff1bd;
+  text-shadow: 0 3px 0 #60247c, 0 6px 0 #17101d, 0 0 24px #c968ff38;
+}
+.start h1 {
+  animation: marquee-neon-glow 5s ease-in-out infinite;
+  text-shadow: 0 0 5px #fff1bd, 0 0 14px #f4c74466, 0 0 28px #c968ff55;
+}
+.start h1 em { color: #d78cff; }
+.neon-title { display: inline-block; }
+.neon-letter {
+  display: inline-block;
+  animation: neon-letter-glow 4.8s ease-in-out infinite;
+  transition: opacity 45ms linear;
+}
+.neon-letter.flickering-off { animation: none; opacity: 0; text-shadow: none; }
+.neon-letter-0 {
+  color: #dc8aff;
+  text-shadow: 0 0 4px #dc8aff, 0 0 12px #b541f5, 0 0 24px #a432e877;
+}
+.neon-letter-1 {
+  color: #ffe477;
+  text-shadow: 0 0 4px #ffe477, 0 0 12px #f4c744, 0 0 24px #e0a92777;
+  animation-delay: -1.6s;
+}
+.neon-letter-2 {
+  color: #72efba;
+  text-shadow: 0 0 4px #72efba, 0 0 12px #18c985, 0 0 24px #18a87977;
+  animation-delay: -3.2s;
+}
+@keyframes marquee-neon-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+@keyframes neon-letter-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.82; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .start h1, .neon-letter { animation: none; }
+}
+.hero-copy, .game-subtitle { color: #d4c6d9; }
+.bead-divider { color: var(--gold); }
+.bead-divider::before, .bead-divider::after { background: linear-gradient(90deg, transparent, #8d6a35, transparent); }
+
+.setup-card, .game-over-header {
+  border: 2px solid #b98b31;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #29202e, #18221e);
+  box-shadow: 0 0 0 4px #f4c74415, 0 7px 0 #0a090c, 0 18px 45px #0008;
+  color: #f9edc9;
+}
+.setup-card h2 { color: #fff1bd; text-shadow: 0 2px #35134c; }
+.setup-hint, .player-summary { color: #cbbdd0; }
+.difficulty-label { color: #f4d57a; }
+.player-options button, .difficulty-options button { border-color: #786583; }
+.player-options button.selected {
+  border-color: #d28cff;
+  background: linear-gradient(180deg, #8c38b8, #572379);
+  box-shadow: 0 3px 0 #321345, 0 0 18px #b84dff45;
+}
+.difficulty-options button.selected {
+  border-color: #37c697;
+  background: linear-gradient(180deg, #16835d, #10573f);
+  box-shadow: 0 3px 0 #092c22, 0 0 16px #22c28b35;
+}
+.primary-button {
+  border-color: #f4c744;
+  background: linear-gradient(180deg, #f3cf5c, #b9821b);
+  box-shadow: 0 4px 0 #68420f, inset 0 1px #fff3bd;
+  color: #211625;
+  text-shadow: none;
+}
+.primary-button:hover { border-color: #ffe990; background: linear-gradient(180deg, #ffe37a, #d29a29); }
+.start-footer { color: #d2bd84; }
+
+.game-header h1 { color: #fff1bd; }
+.week-badge {
+  border: 2px solid #b98b31;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #39243f, #22251d);
+  box-shadow: 0 3px 0 #100d13, inset 0 1px #ffffff14;
+}
+.week-badge span { color: #e2c36d; }
+.week-badge strong { color: #f4c744; text-shadow: 0 0 12px #f4c74433; }
+.week-badge small { color: #d1c5d5; }
+.toolbar { align-items: center; }
+.difficulty-badge { color: #d2c5d8; }
+
+.schedule-zone, .play-area {
+  border: 2px solid #57445f;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #211c27, #17221e);
+  box-shadow: 0 4px 0 #0b090d, inset 0 1px #ffffff0b;
+  color: #f9edc9;
+}
+.schedule-zone h2, .play-area h2 { color: #f8e6ab; }
+.schedule-zone h2.active { color: #71e0b6; }
+.schedule-zone h2.active::before { color: var(--gold); }
+.your-schedule { border-color: #a64de0; box-shadow: 0 4px 0 #0b090d, inset 4px 0 #a64de0, 0 0 18px #a64de022; }
+.schedule-zone.active-player {
+  border-color: #20c58d;
+  box-shadow: 0 0 0 2px #20c58d55, 0 4px 0 #0b090d, inset 4px 0 #20c58d, 0 0 20px #20c58d26;
+}
+.carnival-points, .computer-carnival-points {
+  border-color: #9e4dc1;
+  background: linear-gradient(145deg, #452052, #2d193c);
+  box-shadow: inset 0 1px #ffffff1a, 0 2px 0 #160d1c;
+  color: #f0cbff;
+  text-shadow: 0 0 10px #d276ff40;
+}
+.computer-carnival-points { border: 1px solid #9e4dc1; }
+.your-schedule .schedule-title h2 { color: #fff1bd; }
+.your-schedule .schedule-title h2.active { color: #71e0b6; }
+
+.computer-schedule .schedule-zone { border-color: #45554a; }
+.computer-schedule .schedule-heading h2 { color: #e8dcae; }
+.player-row { scrollbar-color: #77518a #1b171e; }
+.day {
+  border: 1px solid #534360;
+  border-radius: 5px;
+  background: #17191c;
+}
+.day-label { color: #e4c66e; }
+.day-inner {
+  background: linear-gradient(to bottom, #392541 0 25%, #194431 25% 50%, #57431c 50% 75%, #392541 75% 100%);
+  box-shadow: inset 0 0 0 1px #ffffff0b;
+}
+.mardi-gras-day:not(.busted-day) {
+  border: 2px solid #ffd957;
+  background: #60430f;
+  box-shadow: 0 0 0 2px #ffd95722, 0 0 18px #ffc92855;
+}
+.mardi-gras-day:not(.busted-day) .day-label { color: #fff1a8; }
+.mardi-gras-day:not(.busted-day) .day-inner {
+  background: linear-gradient(to bottom, #542d68 0 25%, #146246 25% 50%, #806018 50% 75%, #542d68 75% 100%);
+}
+.mardi-gras-tag {
+  border: 1px solid #ffdc68;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #56226c, #166447, #9a6a11);
+  box-shadow: 0 0 10px #ffcf3f55;
+  color: #fff4bc;
+  text-shadow: 0 1px #24132b;
+}
+.busted-day { border-color: #6a565a; background: #353034; }
+.busted-day .day-label { color: #b7a9ad; }
+
+.card {
+  border: 2px solid #f0c84f;
+  border-radius: 7px;
+  background: linear-gradient(145deg, #fff4d5, #e8d7ad);
+  box-shadow: 0 4px 0 #18121b, 0 7px 12px #0007, inset 0 0 0 2px #fff8df;
+  color: #25172e;
+}
+.card-face hr { background: #9c7526; box-shadow: 0 1px #fff8df; }
+.flip-value { color: #57217c; }
+.card.selected-for-play { outline-color: #36e0a4; box-shadow: 0 0 0 5px #24c58a55, 0 6px 14px #0009; }
+.card.pickable:hover { border-color: #fff08b; box-shadow: 0 0 0 3px #f4c74444, 0 8px 14px #0009; }
+.card-back {
+  border: 3px solid #f4cf4c;
+  background: repeating-linear-gradient(45deg, #49215e 0 8px, #612d78 8px 16px);
+  box-shadow: 0 4px 0 #151019, inset 0 0 0 2px #f4d56d55;
+  color: #ffe179;
+}
+.card-back-divider { background: #f4cf4c; box-shadow: 0 1px #fff8df; }
+.positive-back {
+  border-color: #e5d7ee;
+  background: repeating-linear-gradient(45deg, #146344 0 8px, #1d805a 8px 16px);
+  color: #fff1bf;
+}
+.positive-back .card-face hr { background: #f6d35b; }
+.double-negative-card {
+  border-color: #a451c8;
+  background: repeating-linear-gradient(45deg, #f7e9c8 0 8px, #ddc7e4 8px 16px);
+  color: #3d1954;
+}
+.start-card, .total-card {
+  border-color: #e5c355;
+  background: linear-gradient(to bottom, #164f3a 0 50%, #594218 50% 100%);
+  color: #fff1c1;
+}
+.total-card { border-color: #39ce9b; }
+.computer-schedule .start-card, .computer-schedule .total-card {
+  background: linear-gradient(to right, #164f3a 0 50%, #594218 50% 100%);
+  color: #fff1c1;
+}
+.start-card .card-face hr { background: #f2cf57; }
+.total-card .card-face hr { background: #5de0b0; }
+
+.play-area { background: radial-gradient(ellipse at center, #164731, #13251d); border-color: #287252; }
+.cards {
+  border: 1px dashed #7b6540;
+  border-radius: 7px;
+  background: #111a16;
+  box-shadow: inset 0 0 20px #0007;
+}
+.slot-zone { border-color: #42e1a3; background: #1ec98c38; box-shadow: 0 0 12px #25d99a55; }
+.slot-zone.hover { background: #26e3a16b; }
+.status {
+  border: 1px solid #2fb381;
+  border-radius: 7px;
+  background: linear-gradient(100deg, #163d30, #1a2e25);
+  box-shadow: inset 0 1px #ffffff12, 0 2px 0 #0b100d;
+  color: #c3ffe4;
+}
+.status-sparkle { color: #f4cf4c; text-shadow: 0 0 10px #f4cf4c88; }
+.status-final-turns, .status-last-play {
+  border-color: #f17b6e;
+  background: linear-gradient(100deg, #4a202a, #311b29);
+  box-shadow: inset 0 1px #ffffff12, 0 2px 0 #100a0e, 0 0 14px #eb615533;
+  color: #ffe0cf;
+}
+.status-final-turns .status-sparkle, .status-last-play .status-sparkle { color: #ffd05a; }
+.blind-notice {
+  border-color: #e0b642;
+  border-radius: 7px;
+  background: #3a2e18;
+  color: #ffe6a1;
+}
+.schedule-zone > p, .schedule-controls .busted-message { color: #ff9a83; }
+.rotate-notice {
+  border-color: #9f7a30;
+  background: #302719;
+  color: #f6e8c5;
+}
+
+.rules-dialog, .walkthrough-dialog {
+  border: 2px solid #e3bd4d;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #211a27, #17231d);
+  box-shadow: 0 0 0 4px #e3bd4d20, 0 16px 55px #000b;
+  color: #f4e9cf;
+}
+.rules-dialog::backdrop, .walkthrough-dialog::backdrop { background: #09070dbb; backdrop-filter: blur(4px); }
+.rules-dialog h2, .rules-dialog h3, .walkthrough-dialog h2, .walkthrough-dialog h3 { color: #ffe18a; }
+.rules-kicker, .walkthrough-progress { color: #62d6a7; }
+.rules-intro { color: #ead9f2; }
+.rules-scoring, .walkthrough-example { border: 1px solid #9f7a30; border-radius: 7px; background: #302719; color: #f6e8c5; }
+.walkthrough-example > strong { color: #e8bd54; }
+.walkthrough-card { border-color: #d5ad42; border-radius: 5px; background: #f5e6bf; color: #371c48; }
+.walkthrough-card > span + span { border-color: #8d702c; }
+
+.game-over-header { border-color: #e1ba48; }
+.game-over-header > p:last-child { color: #f1d98c; }
+.game-over-winner { color: #6de0b3; }
+.final-boards > h2 { color: #f3cf64; }
+.final-boards > p, .final-score { color: #e4d7e8; }
+
+@media (max-width: 600px) {
+  .setup-card { border-radius: 9px; }
+  .toolbar button { padding: 0.4rem 0.55rem; }
+}
+
+.start-next-week:not(:disabled) {
+  border: 2px solid #fff08b;
+  background: linear-gradient(180deg, #27c98b, #08754f);
+  box-shadow: 0 4px 0 #06442f, 0 0 0 2px #f4c744, 0 0 22px #38e7a5aa;
+  color: #fff;
+  font-weight: 900;
+  text-shadow: 0 1px 2px #06442f;
+  animation: next-week-ready-pulse 1.15s ease-in-out infinite;
+}
+.start-next-week:not(:disabled):hover {
+  border-color: #fff8c4;
+  background: linear-gradient(180deg, #43e6a8, #0d8c60);
+  box-shadow: 0 4px 0 #06442f, 0 0 0 3px #f4c744, 0 0 30px #38e7a5;
+}
+@keyframes next-week-ready-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 0 #06442f, 0 0 0 2px #f4c744, 0 0 18px #38e7a577; }
+  50% { transform: scale(1.05); box-shadow: 0 5px 0 #06442f, 0 0 0 3px #ffe986, 0 0 30px #38e7a5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .start-next-week:not(:disabled) { animation: none; }
 }
