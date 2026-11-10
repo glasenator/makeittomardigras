@@ -1,18 +1,37 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
 import { makeDecks, type Card, type WeekDecks } from './deck'
-import { canPlace, completedWeekTotals, DAYS, drawBlind, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, WEEKS, winningPlayers } from './gameLogic'
-import { scheduleTotals } from './scheduleTotals'
+import { canPlace, completedWeekTotals, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, sundayCardCount, WEEKS, winningPlayers } from './gameLogic'
+import { activeValues, backValues, scheduleTotals } from './scheduleTotals'
 import { formatValue } from './formatValue'
 import RulesButton from './RulesButton'
 import WalkthroughButton from './WalkthroughButton'
-import { chooseBlindDraw, chooseComputerMove, type Difficulty } from './computerPlayer'
+import { chooseBlindDraw, chooseComputerMove, chooseFlipTarget, type Difficulty } from './computerPlayer'
 
-function CardFace({ top, bottom }: { top: ReactNode; bottom: ReactNode }) {
+function CardNumber({ value, position }: { value: number; position: 'top' | 'bottom' | 'left' | 'right' }) {
+  if (value !== 0) return <span>{formatValue(value)}</span>
+  if (position === 'left' || position === 'right') {
+    return (
+      <span className={`flip-value flip-value-${position}`} aria-label={`FLIP: up, down, and ${position}`}>
+        <span aria-hidden="true">↑</span>
+        <span aria-hidden="true">{position === 'left' ? '← FLIP' : 'FLIP →'}</span>
+        <span aria-hidden="true">↓</span>
+      </span>
+    )
+  }
   return (
-    <div className="card-face">
-      <span>{typeof top === 'number' ? formatValue(top) : top}</span>
+    <span className={`flip-value flip-value-${position}`} aria-label={`FLIP: left, right, and ${position === 'top' ? 'up' : 'down'}`}>
+      <span className="flip-arrows" aria-hidden="true">{position === 'top' ? '↑' : '↓'}</span>
+      <span aria-hidden="true">← FLIP →</span>
+    </span>
+  )
+}
+
+function CardFace({ top, bottom, horizontal = false }: { top: ReactNode; bottom: ReactNode; horizontal?: boolean }) {
+  return (
+    <div className={`card-face${horizontal ? ' card-face-horizontal' : ''}`}>
+      {typeof top === 'number' ? <CardNumber value={top} position={horizontal ? 'left' : 'top'} /> : <span>{top}</span>}
       <hr />
-      <span>{typeof bottom === 'number' ? formatValue(bottom) : bottom}</span>
+      {typeof bottom === 'number' ? <CardNumber value={bottom} position={horizontal ? 'right' : 'bottom'} /> : <span>{bottom}</span>}
     </div>
   )
 }
@@ -59,10 +78,10 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
   }, [isOver])
 
   const availableCards = state.blindCard ? [state.blindCard] : state.drawArea
-  const noMoves = !state.weekComplete && !state.gameOver &&
+  const noMoves = !state.pendingFlip && !state.weekComplete && !state.gameOver &&
     legalMoves(state.schedules[state.turn], availableCards).length === 0 && (state.blindCard !== null || state.deck.length === 0)
 
-  const canPick = state.turn === 0 && !state.weekComplete && !isOver && !state.error && !noMoves
+  const canPick = state.turn === 0 && !state.pendingFlip && !state.weekComplete && !isOver && !state.error && !noMoves
 
   const pick = useCallback((card: Card, day: number, slot: number) => {
     setState((s) => playCard(s, card.id, day, slot))
@@ -71,6 +90,12 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
   useEffect(() => {
     if (state.weekComplete || isOver || state.error || noMoves || state.turn === 0) return
     const t = setTimeout(() => {
+      if (state.pendingFlip) {
+        const target = chooseFlipTarget(state, difficulty)
+        if (!target) throw new Error('Computer FLIP has no eligible target.')
+        setState((s) => flipCard(s, target.day, target.slot))
+        return
+      }
       if (chooseBlindDraw(state, difficulty)) {
         setState((s) => drawBlind(s))
         return
@@ -82,13 +107,11 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     return () => clearTimeout(t)
   }, [state, isOver, noMoves, pick, difficulty])
 
-  // Resolve the target spot from the dragged card's own position (not the cursor):
-  // the day under the card's centre, and the slot whose top edge is nearest the card's top.
   const spotAt = (e: DragEvent<HTMLDivElement>) => {
     const cardLeft = e.clientX - grab.current.x
     const cardTop = e.clientY - grab.current.y
     const days = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('.day-inner'))
-    const cardW = days[0].querySelector('.slot-zone, .slotted')?.getBoundingClientRect().width ?? grab.current.w
+    const cardW = days[0].getBoundingClientRect().width
     const centerX = cardLeft + cardW / 2
     const day = days.findIndex((el) => {
       const r = el.getBoundingClientRect()
@@ -97,7 +120,7 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     if (day < 0) return null
     const rect = days[day].getBoundingClientRect()
     const slotH = rect.height / 4
-    const slot = Math.min(Math.max(Math.round((cardTop - rect.top) / slotH), 0), SLOTS - 1)
+    const slot = Math.min(Math.max(Math.round((cardTop - rect.top) / slotH), 0), draggedCard?.orientation === 'horizontal' ? SLOTS : SLOTS - 1)
     const player = state.schedules[0]
     return draggedCard && canPlace(player, day, slot, draggedCard) ? { day, slot } : null
   }
@@ -120,14 +143,15 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
 
   const renderSchedule = (i: number) => {
     const bust = state.bustColumns[i]
-    const totals = scheduleTotals(state.schedules[i].slice(0, bust ?? undefined), state.starting[i])
+    const totals = scheduleTotals(state.schedules[i], state.starting[i], bust)
+    const targets = state.pendingFlip?.player === i && i === 0 ? flipTargets(state) : []
     return (
       <section className={`zone schedule-zone${i === 0 ? ' your-schedule' : ''}`}>
         <h2 className={i === state.turn && !state.weekComplete ? 'active' : ''}>
           {i === 0 ? 'Your' : `Computer ${i}'s`} Schedule Area{' '}
           <strong aria-live="polite">Points: {totals.points}</strong>
         </h2>
-        {bust !== null && <p>Busted on {DAYS[bust]}; this column and later cards count as zero.</p>}
+        {bust !== null && <p>Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
         <div className="player-row">
           <div className="card start-card">
             <CardFace top={`💰 ${state.starting[i].money}`} bottom={`⚡ ${state.starting[i].energy}`} />
@@ -139,21 +163,46 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
             onDrop={i === 0 ? onDrop : undefined}
           >
             {DAYS.map((day, d) => (
-              <div key={day} className="day">
-                <div className="day-label">{day}</div>
+              <div key={day} className={`day${bust !== null && d >= bust ? ' busted-day' : ''}`}>
+                <div className="day-label">{day}{bust !== null && d >= bust && <span className="sr-only"> (busted, values count as zero)</span>}</div>
                 <div className="day-inner">
-                  {state.schedules[i][d].map((card, slot) =>
-                    card && (
-                      <div className={`card slotted${bust !== null && d >= bust ? ' card-back' : ''}`} style={{ '--slot': slot, zIndex: card.placedAt } as CSSProperties} key={card.id} aria-label={bust !== null && d >= bust ? 'Busted card, counts as zero' : undefined}>
-                        {bust !== null && d >= bust ? '🂠' : <CardFace top={card.top} bottom={card.bottom} />}
+                  {state.schedules[i][d].map((card, slot) => {
+                    if (!card) return null
+                    const horizontal = card.orientation === 'horizontal'
+                    const row = card.row ?? slot
+                    const busted = bust !== null && d >= bust
+                    const partiallyBusted = bust !== null && horizontal && d < bust && d + 1 >= bust
+                    const target = targets.some((item) => item.day === d && item.slot === slot)
+                    const values = activeValues(card)
+                    const positiveBack = card.faceDown && values
+                    const description = positiveBack
+                      ? `positive back ${formatValue(values.top)}, ${formatValue(values.bottom)}`
+                      : card.faceDown ? 'face-down card, counts as zero' : undefined
+                    return (
+                      <div
+                        className={`card slotted${horizontal ? ' horizontal-card' : ''}${card.faceDown && !values ? ' card-back' : ''}${positiveBack ? ' positive-back' : ''}${!card.faceDown && card.top < 0 && card.bottom < 0 ? ' double-negative-card' : ''}${target ? ' flip-target' : ''}`}
+                        style={{ '--slot': row, zIndex: card.sequence ?? card.placedAt } as CSSProperties}
+                        key={card.id}
+                        role={target ? 'button' : undefined}
+                        tabIndex={target ? 0 : undefined}
+                        aria-label={target ? `Flip ${DAYS[d]} ${horizontal ? `horizontal row ${row + 1}` : ['top', 'middle', 'bottom'][row]} card ${card.faceDown ? 'face up' : 'face down'}${description ? `; ${description}` : ''}` : partiallyBusted ? `Horizontal card: ${DAYS[d + 1]} section is busted and counts as zero${description ? `; ${description}` : ''}` : busted ? `Card in busted column, counts as zero${description ? `; ${description}` : ''}` : description}
+                        onClick={target ? () => setState((s) => flipCard(s, d, slot)) : undefined}
+                        onKeyDown={target ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            setState((s) => flipCard(s, d, slot))
+                          }
+                        } : undefined}
+                      >
+                        {values ? <CardFace top={values.top} bottom={values.bottom} horizontal={horizontal} /> : '🂠'}
                       </div>
-                    ),
-                  )}
-                  {i === 0 && !isOver && draggedCard && state.schedules[i][d].map((_, slot) =>
+                    )
+                  })}
+                  {i === 0 && !isOver && draggedCard && Array.from({ length: draggedCard.orientation === 'horizontal' ? 4 : SLOTS }, (_, slot) => slot).map((slot) =>
                     canPlace(state.schedules[i], d, slot, draggedCard) && (
                       <div
                         key={`slot-${slot}`}
-                        className={`slot-zone${hover?.day === d && hover.slot === slot ? ' hover' : ''}`}
+                        className={`slot-zone${draggedCard.orientation === 'horizontal' ? ' horizontal-slot' : ''}${hover?.day === d && hover.slot === slot ? ' hover' : ''}`}
                         style={{ '--slot': slot } as CSSProperties}
                       />
                     ),
@@ -184,12 +233,12 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     </div>
   )
   const blindSkipMessage = state.blindSkip &&
-    `${state.blindSkip.player === 0 ? 'You drew' : `Computer ${state.blindSkip.player} drew`} ${formatValue(state.blindSkip.card.top)} / ${formatValue(state.blindSkip.card.bottom)} from the deck. There was no legal placement, so the card was set aside and the turn was skipped.`
+    `${state.blindSkip.player === 0 ? 'You drew' : `Computer ${state.blindSkip.player} drew`} ${state.blindSkip.card.top === 0 ? 'FLIP' : formatValue(state.blindSkip.card.top)} / ${state.blindSkip.card.bottom === 0 ? 'FLIP' : formatValue(state.blindSkip.card.bottom)} from the deck. There was no legal placement, so the card was set aside and the turn was skipped.`
 
   if (isOver) {
     const totals = completedWeekTotals(state)
-    const highestPoints = Math.max(...totals.map((total) => total.points))
-    const winners = winningPlayers(totals).map((i) => i === 0 ? 'You' : `Computer ${i}`)
+    const highestScore = Math.max(...totals.map(finalScore))
+    const winners = winningPlayers(state).map((i) => i === 0 ? 'You' : `Computer ${i}`)
 
     return (
       <main className="game game-over">
@@ -197,15 +246,18 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
           <p className="eyebrow">✦ Make it to Mardi Gras ✦</p>
           <h1 ref={gameOverHeading} tabIndex={-1}>Game over</h1>
           <p className="game-over-winner">{winners.length === 1 ? 'Winner' : 'Winners'}: {winners.join(', ')}</p>
-          <p>{highestPoints} victory {highestPoints === 1 ? 'point' : 'points'}</p>
-          <p>Point ties are broken by energy, then money.</p>
+          <p>Winning final score: {highestScore}</p>
+          <p>Final score = victory points − money − energy. Ties go to the most cards in Sunday.</p>
         </header>
         {toolbar}
         {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
         <section className="final-boards" aria-labelledby="final-boards-heading">
           <h2 id="final-boards-heading">Final schedules</h2>
-          <p>Final scores include carried-over points and any busts from week 3.</p>
-          {state.schedules.map((_, i) => <div key={i}>{renderSchedule(i)}</div>)}
+          <p>Scores use carried-over points and resources after week 3 busts. Sunday counts include covered cards and cards in busted columns.</p>
+          {state.schedules.map((schedule, i) => <div key={i}>
+            <p className="final-score">{i === 0 ? 'Your' : `Computer ${i}'s`} final score: <strong>{finalScore(totals[i])}</strong> ({totals[i].points} points − {totals[i].money} money − {totals[i].energy} energy); Sunday cards: {sundayCardCount(schedule)}</p>
+            {renderSchedule(i)}
+          </div>)}
         </section>
       </main>
     )
@@ -213,9 +265,11 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
 
   const playableIds = new Set(legalMoves(state.schedules[state.turn], availableCards).map((move) => move.card.id))
   const lastPlay = lastPlayStatus(state)
+  const topCard = state.deck[0]
+  const topBack = topCard ? backValues(topCard) : null
   const renderDrawCard = (card: Card, enabled: boolean) => (
     <div
-      className={`card${enabled ? ' pickable' : ''}`}
+      className={`card${card.orientation === 'horizontal' ? ' horizontal-card' : ''}${card.top < 0 && card.bottom < 0 ? ' double-negative-card' : ''}${enabled ? ' pickable' : ''}`}
       key={card.id}
       draggable={enabled}
       onDragStart={(e) => {
@@ -226,7 +280,7 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       }}
       onDragEnd={clearDrag}
     >
-      <CardFace top={card.top} bottom={card.bottom} />
+      <CardFace top={card.top} bottom={card.bottom} horizontal={card.orientation === 'horizontal'} />
     </div>
   )
 
@@ -250,7 +304,12 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       <section className="zone play-area">
         <div className="deck-pile">
           <h2>Deck ({state.deck.length})</h2>
-          <div className="card card-back">{state.deck.length ? '🂠' : 'Empty'}</div>
+          <div
+            className={`card${topBack ? ` positive-back${topCard.orientation === 'horizontal' ? ' horizontal-card' : ''}` : ' card-back'}`}
+            aria-label={topBack ? `Top of deck: positive back ${formatValue(topBack.top)}, ${formatValue(topBack.bottom)}${topCard.orientation === 'horizontal' ? ', horizontal' : ''}` : state.deck.length ? 'Top of deck: blank card back' : 'Deck empty'}
+          >
+            {topBack ? <CardFace top={topBack.top} bottom={topBack.bottom} horizontal={topCard.orientation === 'horizontal'} /> : state.deck.length ? '🂠' : 'Empty'}
+          </div>
           <button type="button" className="blind-draw-button" disabled={!canPick || !!state.blindCard || state.deck.length === 0} onClick={() => setState((s) => drawBlind(s))}>Draw blind</button>
         </div>
         <div className="draw-area">
@@ -260,7 +319,7 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
           </div>
         </div>
         {state.blindCard && (
-          <div className="blind-reveal">
+          <div className={`blind-reveal${state.blindCard.orientation === 'horizontal' ? ' blind-reveal-horizontal' : ''}`}>
             <h2>Blind draw</h2>
             {renderDrawCard(state.blindCard, canPick && playableIds.has(state.blindCard.id))}
             <p>{state.turn === 0 ? 'Place this card.' : `Computer ${state.turn} is placing this card.`}</p>
@@ -281,6 +340,8 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
                 ? 'Game over — all three weeks are complete.'
                 : state.weekComplete
                   ? `Week ${state.week} complete. Review the results before starting the next week.`
+                  : state.pendingFlip
+                    ? state.turn === 0 ? `Choose a highlighted card for the ${state.schedules[0][state.pendingFlip.day][state.pendingFlip.slot]?.orientation === 'horizontal' ? state.pendingFlip.halves[0] === 'top' ? 'left' : 'right' : state.pendingFlip.halves[0]} FLIP.` : `Computer ${state.turn} is choosing a card to flip…`
                   : noMoves
                     ? `${state.turn === 0 ? 'You have' : `Computer ${state.turn} has`} no eligible placement. Start a new game.`
                     : state.turn === 0

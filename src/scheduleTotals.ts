@@ -3,49 +3,86 @@ import type { Card } from './deck'
 export const STARTING_VALUES = { money: 5, energy: 5 } as const
 
 export type PlayerTotals = { money: number; energy: number; points: number }
-export type ScheduledCard = Card & { placedAt: number }
+export type ScheduledCard = Card & { placedAt: number; sequence?: number; row?: number; faceDown?: boolean }
+export type Schedule = (ScheduledCard | null)[][]
+export type ScheduleEntry = { card: ScheduledCard; day: number; slot: number; row: number }
 
-export function visibleSections(column: (ScheduledCard | null)[]): (number | null)[] {
-  const sections: ({ value: number; placedAt: number } | null)[] = [null, null, null, null]
-  column.forEach((card, slot) => {
-    if (!card) return
-    for (const [section, value] of [[slot, card.top], [slot + 1, card.bottom]]) {
-      if (!sections[section] || sections[section].placedAt < card.placedAt) {
-        sections[section] = { value, placedAt: card.placedAt }
+export function backValues(card: Card): { top: number; bottom: number } | null {
+  return card.top < 0 && card.bottom < 0 ? { top: -card.top, bottom: -card.bottom } : null
+}
+
+export function activeValues(card: ScheduledCard): { top: number; bottom: number } | null {
+  if (!card.faceDown) return { top: card.top, bottom: card.bottom }
+  return backValues(card)
+}
+
+export function scheduleEntries(schedule: Schedule): ScheduleEntry[] {
+  return schedule.flatMap((column, day) => column.flatMap((card, slot) =>
+    card ? [{ card, day, slot, row: card.row ?? slot }] : [],
+  ))
+}
+
+export function entryCells(entry: ScheduleEntry): [number, number][] {
+  return entry.card.orientation === 'horizontal'
+    ? [[entry.day, entry.row], [entry.day + 1, entry.row]]
+    : [[entry.day, entry.row], [entry.day, entry.row + 1]]
+}
+
+export function visibleGrid(schedule: Schedule): (ScheduleEntry | null)[][] {
+  const grid: (ScheduleEntry | null)[][] = schedule.map(() => Array<ScheduleEntry | null>(4).fill(null))
+  for (const entry of scheduleEntries(schedule)) {
+    for (const [day, row] of entryCells(entry)) {
+      if (!grid[day] || row < 0 || row >= 4) continue
+      const current = grid[day][row]
+      if (!current || (current.card.sequence ?? current.card.placedAt) < (entry.card.sequence ?? entry.card.placedAt)) {
+        grid[day][row] = entry
       }
     }
-  })
-  return sections.map((entry) => entry?.value ?? null)
+  }
+  return grid
+}
+
+export function visibleSectionCards(column: (ScheduledCard | null)[]): (ScheduledCard | null)[] {
+  return visibleGrid([column])[0].map((entry) => entry?.card ?? null)
+}
+
+function entryValue(entry: ScheduleEntry, day: number, row: number): number {
+  const values = activeValues(entry.card)
+  if (!values) return 0
+  const first = entry.card.orientation === 'horizontal' ? day === entry.day : row === entry.row
+  return first ? values.top : values.bottom
+}
+
+export function visibleSections(column: (ScheduledCard | null)[]): (number | null)[] {
+  return visibleGrid([column])[0].map((entry, row) => entry ? entryValue(entry, 0, row) : null)
 }
 
 export function scheduleTotals(
-  schedule: (ScheduledCard | null)[][],
+  schedule: Schedule,
   starting: PlayerTotals = { ...STARTING_VALUES, points: 0 },
+  cutoff: number | null = null,
 ) {
   const totals = { ...starting }
-
-  const addSection = (section: number, value: number) => {
-    if (section === 0 || section === 3) totals.points += value
-    else if (section === 1) totals.money += value
-    else if (section === 2) totals.energy += value
-  }
-
-  for (const column of schedule) {
-    visibleSections(column).forEach((value, section) => {
-      if (value !== null) addSection(section, value)
+  const grid = visibleGrid(schedule)
+  grid.forEach((column, day) => {
+    if (cutoff !== null && day >= cutoff) return
+    column.forEach((entry, row) => {
+      if (!entry) return
+      const value = entryValue(entry, day, row)
+      if (row === 0 || row === 3) totals.points += value
+      else if (row === 1) totals.money += value
+      else totals.energy += value
     })
-  }
-
+  })
   return totals
 }
 
-export function bustColumn(schedule: (ScheduledCard | null)[][], starting: PlayerTotals): number | null {
+export function bustColumn(schedule: Schedule, starting: PlayerTotals): number | null {
   const final = scheduleTotals(schedule, starting)
   if (final.money >= 0 && final.energy >= 0) return null
 
-  let totals = { ...starting }
   for (let day = 0; day < schedule.length; day++) {
-    totals = scheduleTotals([schedule[day]], totals)
+    const totals = scheduleTotals(schedule, starting, day + 1)
     if (totals.money < 0 || totals.energy < 0) return day
   }
   return null

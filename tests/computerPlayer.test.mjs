@@ -18,8 +18,8 @@ const result = await build({
 const load = (name) => import(`data:text/javascript;base64,${Buffer.from(
   result.outputFiles.find((file) => file.path.endsWith(`/${name}.js`)).text,
 ).toString('base64')}`)
-const { chooseBlindDraw, chooseComputerMove } = await load('computerPlayer')
-const { drawBlind, legalMoves, newGame, playCard } = await load('gameLogic')
+const { chooseBlindDraw, chooseComputerMove, chooseFlipTarget } = await load('computerPlayer')
+const { drawBlind, finalScore, legalMoves, newGame, playCard } = await load('gameLogic')
 const { bustColumn, scheduleTotals } = await load('scheduleTotals')
 
 const cards = [
@@ -113,13 +113,34 @@ test('hard preserves more future placements when immediate points are equal', ()
 test('hard avoids starting final turns while behind when an equivalent earlier placement is available', () => {
   const state = game()
   state.starting[0].points = 100
-  for (let day = 0; day < 4; day++) {
+  for (let day = 0; day < 6; day++) {
     state.schedules[1][day][0] = { id: 100 + day, top: 2, bottom: 1, placedAt: 1 }
   }
   state.drawArea = [{ id: 201, top: 0, bottom: 6 }]
   const move = chooseComputerMove(state, 'hard', () => 0)
-  assert.notEqual(move.day, 4)
+  assert.notEqual(move.day, 6)
   assert.equal(move.slot, 2)
+})
+
+test('medium and hard optimize final score instead of accumulating unused resources in week three', () => {
+  const state = { ...game(), week: 3, drawArea: [{ id: 21, top: 2, bottom: 3 }, { id: 22, top: 2, bottom: -3 }] }
+  for (const difficulty of ['medium', 'hard']) {
+    const move = chooseComputerMove(state, difficulty, () => 0)
+    const next = playCard(state, move.card.id, move.day, move.slot)
+    assert.equal(move.card.id, 22)
+    assert.equal(finalScore(scheduleTotals(next.schedules[1], state.starting[1])), -5)
+  }
+})
+
+test('week-three computer FLIP choices account for the final resource penalty', () => {
+  const state = { ...game(), week: 3 }
+  state.schedules[1][0][1] = { id: 101, top: 5, bottom: 5, placedAt: 1 }
+  state.schedules[1][2][1] = { id: 102, top: 1, bottom: 1, placedAt: 1 }
+  state.schedules[1][1][1] = { id: 103, top: 0, bottom: 1, placedAt: 1 }
+  state.pendingFlip = { player: 1, day: 1, slot: 1, halves: ['top'], extraTurnsAfter: null }
+  for (const difficulty of ['medium', 'hard']) {
+    assert.deepEqual(chooseFlipTarget(state, difficulty, () => 0), { day: 0, slot: 1 })
+  }
 })
 
 test('medium and hard choices do not depend on hidden deck order or card values', () => {

@@ -27,46 +27,56 @@ function RulesButton() {
             <button type="submit" autoFocus>Close</button>
           </form>
         </div>
-        <p className="rules-intro">Build your schedule over three weeks, collecting victory points while managing your money and energy.</p>
+        <p className="rules-intro">Build a seven-day schedule over three weeks. Earn victory points, manage your money and energy, and finish with the highest final score.</p>
 
         <section>
           <h3>1. Set up</h3>
           <ul>
-            <li>Choose <strong>2–5 players</strong>, including yourself. All other players are computers.</li>
-            <li>Choose one difficulty for all computers: <strong>Easy</strong> chooses random legal moves; <strong>Medium</strong> favors points and resources; <strong>Hard</strong> also considers bust risk, future placements, and when to end the week.</li>
-            <li>Each player starts with <strong>5 money and 5 energy</strong>. Each week uses its own shuffled deck.</li>
-            <li>Deal face-up cards to the draw area: <strong>one more card than the number of players</strong>. For example, with 3 players, deal 4 cards.</li>
+            <li>Choose <strong>2–5 players</strong>. You are one player; the rest are computers.</li>
+            <li>Choose one difficulty for all computers: Easy makes random legal plays; Medium favors points and resources; Hard also considers busts, future moves, and when to end the week.</li>
+            <li>Each player starts with <strong>5 money and 5 energy</strong>. The game lasts three weeks, with a separate shuffled deck each week.</li>
+            <li>Card number values range from <strong>1–8 in week 1</strong>, <strong>2–9 in week 2</strong>, and <strong>3–10 in week 3</strong>. The range increases by 1 each week.</li>
+            <li>Put <strong>one more card than the number of players</strong> face up in the draw area. For example, 3 players start with 4 cards.</li>
           </ul>
         </section>
 
         <section>
           <h3>2. Take turns</h3>
-          <p>You start week 1. On your turn, choose a face-up card from the draw area, or <strong>draw blind</strong> from the top of the deck. Drag your chosen card into your schedule. Play continues clockwise.</p>
-          <p>A blind card is revealed after you draw it and must be placed instead of a face-up card. If it has no legal placement, set it aside and skip your turn. You cannot draw blind when the deck is empty.</p>
-          <p>After everyone has taken a turn, <strong>keep all unpicked face-up cards</strong> and add cards from the deck until the draw area is full again.</p>
+          <p>You take the first turn in week 1. On your turn, either take a face-up card from the draw area or draw blind from the top of the deck. Place that card in your schedule. Play then passes clockwise.</p>
+          <p>The deck shows the back of its top card. A double-negative card has positive values on its back; other cards have blank backs. When you draw blind, reveal and play the card&apos;s front instead. If you have no legal place for it, set it aside and skip your turn. You cannot draw blind from an empty deck.</p>
+          <p>When everyone has taken one turn, leave unpicked cards in the draw area. Draw enough cards from the deck to bring it back to its starting size.</p>
           <h4>Who starts the next draw?</h4>
-          <p>Players who drew blind are <strong>ineligible to start the next draw</strong>. Compare the face-up cards the other players picked, adding the two numbers on each card. The player whose card has the <strong>lowest sum</strong> starts the next draw. If there is a tie:</p>
+          <p>A blind draw makes you <strong>ineligible to start the next draw</strong>. For everyone else, add the two values on the card they picked; FLIP counts as zero. The lowest total starts the next draw. Break ties in this order:</p>
           <ol>
-            <li>Among the tied cards, the card with the <strong>lowest individual number</strong> goes first.</li>
-            <li>If there is still a tie, the first tied player clockwise after the previous draw&apos;s starting player goes first.</li>
+            <li>The tied card with the lowest single value starts. For example, -3 / +4 beats -2 / +3.</li>
+            <li>If still tied, the first tied player clockwise from the previous starting player goes first.</li>
           </ol>
-          <p>If everyone drew blind, the next player clockwise after the previous starting player starts. Play then continues clockwise. Final turns follow a different rule; see <strong>End the week</strong>.</p>
+          <p>If everyone drew blind, the next player clockwise after the previous starting player goes first. Then play continues clockwise. Final turns use a different order; see <strong>End the week</strong>.</p>
         </section>
 
         <section>
           <h3>3. Place cards in your schedule</h3>
-          <p>Your schedule has <strong>five columns</strong>, each with three overlapping card positions. A new card is placed on top of any cards it overlaps.</p>
-          <h4>Opening a column</h4>
-          <p>You may place a card in the first column without a neighbor. To place the <strong>first card</strong> in any later column, the column immediately to its left must have a card in the same position or an adjacent position. Once a column has a card, further placements in that column do not need a left neighbor.</p>
+          <p>Your schedule has <strong>seven columns, Monday through Sunday</strong>. Vertical cards cover two sections in one column. Horizontal cards cover one section in each of two neighboring columns. New cards go on top of cards they overlap.</p>
+          <p>A horizontal card scores its left value in the left column and its right value in the next column. It must fit within the schedule. Its left section must connect to your schedule; its right section can connect to a card in the next column.</p>
+          <h4>Adjacent placements</h4>
+          <p>Every card must connect in its leftmost column. At least one section of the new card must do one of the following:</p>
+          <ul>
+            <li>Overlap a section, or sit directly above or below one, in the same column.</li>
+            <li>Sit in the same row as a section in the column immediately to the left.</li>
+          </ul>
+          <p>Your starting values count as sections just left of Monday, in the two middle rows. So your first horizontal card must use one of those rows; any vertical position can touch a starting value. Diagonal sections and gaps do not connect.</p>
           <h4>Covering numbers</h4>
           <ul>
-            <li>You can cover a <strong>positive number</strong> with a negative number or zero.</li>
-            <li>You can cover a <strong>negative number</strong> with a positive number or zero.</li>
-            <li>You can <strong>never cover a visible zero</strong>.</li>
+            <li>Cover a positive number with a negative number or FLIP.</li>
+            <li>Cover a negative number with a positive number or FLIP.</li>
+            <li>You cannot cover a visible FLIP. You may cover a blank card back with any value. Positive values on a double-negative card&apos;s back follow the normal positive-number rule.</li>
           </ul>
-          <p>If your card covers two numbers, <strong>both must follow these rules</strong>. For example, a +3 can cover a -2, but not a +2 or a 0.</p>
+          <p>If a card covers two sections, each section must follow these rules. You cannot cover both visible sections of the same card with one play, whether that card is face up or face down.</p>
           <h4>Reusing a position</h4>
-          <p>A card that is fully visible cannot be replaced in the same position. If a newer card covers part of it, you may replace it, following the placement rules above. Set the replaced card aside for the rest of the week.</p>
+          <p>You may replace a partially covered vertical card if the new card can legally cover its visible section. Set the replaced card aside for the rest of the week. Cards hidden underneath do not prevent the replacement. A horizontal card stays in your schedule when only part of it is covered.</p>
+          <h4>FLIP</h4>
+          <p>FLIP counts as zero. When you place a card with FLIP, turn over one fully uncovered adjacent card in your schedule, if possible. Follow the arrows: a vertical FLIP points to the left and right, plus above it if it is on top or below it if it is on bottom. A horizontal FLIP points above and below its section, plus outward from the card&apos;s nearest edge.</p>
+          <p>A double-negative card has the opposite positive values on its back. For example, -2 / -5 becomes +2 / +5. These values score and are covered like other positive numbers. Other cards have blank backs that count as zero and can be covered by any value. A later FLIP can turn an uncovered card back to its front; doing so does not trigger that card&apos;s FLIP effect. If your card has two FLIPs, resolve the top or left one first, then the bottom or right one. Both may turn over the same card.</p>
         </section>
 
         <section>
@@ -78,21 +88,23 @@ function RulesButton() {
             <li><strong>Energy</strong></li>
             <li><strong>Victory points</strong></li>
           </ol>
-          <p>Only <strong>visible numbers</strong> count; covered numbers do not. Add money and energy to your starting amounts. Your points appear beside your schedule, and your current money and energy appear on the card to its right.</p>
+          <p>Only visible values count; covered values do not. Add visible money and energy to your starting amounts. Your points appear beside your schedule; your running money and energy appear on the card at its right.</p>
         </section>
 
         <section>
           <h3>5. End the week</h3>
-          <p>A week normally ends when the deck cannot fully refill the draw area. But if someone places a card in the <strong>fifth column</strong>, each player gets <strong>one more turn</strong>, starting with the next player. These final turns stay clockwise, even if the draw area is refilled. If there are too few cards for a full refill, use the remaining available cards. The week ends after the final turns.</p>
+          <p>A week ends when the deck cannot refill the draw area. There is one exception: if a player places a <strong>vertical card in Sunday</strong>, each player gets one final turn, starting with the next player and continuing clockwise. A horizontal card spanning Sunday does not trigger final turns. Keep this clockwise order even if the draw area refills. If the deck cannot fully refill it, use the cards that remain. The week ends after everyone takes a final turn.</p>
           <h4>Check for a bust</h4>
-          <p>At the end of the week, check each player&apos;s final money and energy:</p>
+          <p>After the week ends, check each player&apos;s final money and energy:</p>
           <ul>
-            <li>If <strong>both are zero or higher</strong>, no cards are flipped, even if a resource was negative earlier in the schedule.</li>
-            <li>If <strong>either is negative</strong>, work through the schedule from left to right, adding each column to the starting amounts. Find the first column where either running resource becomes negative. Flip every card in that column and all later columns; they count as zero, including their victory points.</li>
+            <li>If both are zero or higher, no columns are busted. This is true even if a resource was negative earlier.</li>
+            <li>If either is negative, start with your starting amounts and add each column from left to right. Find the first column where money or energy drops below zero. Gray out that column and every column after it; all their values, including points, count as zero. If a horizontal card crosses the bust line, its section before the line still counts. Busting does not turn cards over.</li>
           </ul>
           <h4>Start the next week</h4>
-          <p>Review the completed schedules, then carry each player&apos;s remaining points, money, and energy into the next week. For weeks 2 and 3, the player with the <strong>fewest carried-over victory points</strong> starts. If tied, the first tied player clockwise after the previous week&apos;s starting player starts.</p>
-          <p>The game ends after <strong>week 3</strong>. The player with the most victory points wins. If tied, the tied player with the most energy wins; if still tied, the tied player with the most money wins. If all three totals are tied, those players share the win.</p>
+          <p>Carry each player&apos;s remaining points, money, and energy into the next week. The player with the fewest carried-over points starts weeks 2 and 3. If players tie, the first tied player clockwise from the previous week&apos;s starting player goes first.</p>
+          <p>The game ends after <strong>week 3</strong>. Calculate each final score:</p>
+          <p><strong>Final score = victory points − remaining money − remaining energy.</strong></p>
+          <p>The highest final score wins. If players tie, the one with the most cards occupying Sunday wins. Count every card that touches Sunday, including covered cards, horizontal cards, and cards in a busted column. If they are still tied, they share the win.</p>
         </section>
       </dialog>
     </>

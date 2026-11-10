@@ -14,7 +14,7 @@ const result = await build({
   format: 'esm',
   platform: 'node',
 })
-const { newGame, playCard, drawBlind, startNextWeek, chooseBlindDraw, chooseComputerMove, makeDecks, completedWeekTotals, winningPlayers } =
+const { newGame, playCard, flipCard, drawBlind, startNextWeek, chooseBlindDraw, chooseComputerMove, chooseFlipTarget, makeDecks, winningPlayers } =
   await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`)
 
 function randomGenerator(seed) {
@@ -48,6 +48,12 @@ test('hard wins at least 60 of 100 seeded games against medium', () => {
       }
       const player = state.turn
       const difficulty = player === hard ? 'hard' : 'medium'
+      if (state.pendingFlip) {
+        const target = chooseFlipTarget(state, difficulty, randoms[player])
+        assert.ok(target, `Game ${seed}: player ${player} has no FLIP target`)
+        state = flipCard(state, target.day, target.slot)
+        continue
+      }
       if (chooseBlindDraw(state, difficulty, randoms[player])) {
         state = drawBlind(state)
         continue
@@ -58,7 +64,7 @@ test('hard wins at least 60 of 100 seeded games against medium', () => {
     }
     assert.equal(state.error, null, `Game ${seed}: ${state.error}`)
     assert.equal(state.gameOver, true, `Game ${seed} did not finish`)
-    const winners = winningPlayers(completedWeekTotals(state))
+    const winners = winningPlayers(state)
     if (winners.length === 1 && winners[0] === hard) wins++
   }
   assert.ok(wins >= 60, `Hard won only ${wins} of 100 games`)

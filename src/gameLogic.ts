@@ -1,10 +1,10 @@
 import type { Card, WeekDecks } from './deck'
-import { bustColumn, scheduleTotals, STARTING_VALUES, visibleSections, type PlayerTotals, type ScheduledCard } from './scheduleTotals'
+import { activeValues, bustColumn, entryCells, scheduleEntries, scheduleTotals, STARTING_VALUES, visibleGrid, type PlayerTotals, type Schedule, type ScheduledCard } from './scheduleTotals'
 
-export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 export const SLOTS = 3
 export const WEEKS = 3
-export type Schedule = (ScheduledCard | null)[][]
+export type { Schedule } from './scheduleTotals'
 export type GameState = {
   deck: Card[]
   drawArea: Card[]
@@ -19,6 +19,7 @@ export type GameState = {
   drawPicks: (Card | 'blind' | null)[]
   blindCard: Card | null
   blindSkip: { player: number; card: Card } | null
+  pendingFlip: { player: number; day: number; slot: number; halves: ('top' | 'bottom')[]; extraTurnsAfter: number | null } | null
   extraTurns: number | null
   weekComplete: boolean
   bustColumns: (number | null)[]
@@ -26,29 +27,44 @@ export type GameState = {
   error: string | null
 }
 
-export const slotOpen = (player: Schedule, day: number, slot: number) =>
-  day === 0 || player[day].some((card) => card !== null) ||
-  player[day - 1].some((card, k) => card && Math.abs(k - slot) <= 1)
+export const slotOpen = (player: Schedule, day: number, slot: number, horizontal = false) => {
+  const entries = scheduleEntries(player)
+  const rows = horizontal ? [slot] : [slot, slot + 1]
+  if (day === 0 && rows.some((row) => row === 1 || row === 2)) return true
+  return entries.some((entry) => entryCells(entry).some(([d, row]) =>
+    rows.some((incomingRow) =>
+      (d === day && Math.abs(row - incomingRow) <= 1) ||
+      (d === day - 1 && row === incomingRow))))
+}
 
 export const canPlace = (player: Schedule, day: number, slot: number, incoming: Card): boolean => {
   const column = player[day]
-  if (!column || !Number.isInteger(slot) || slot < 0 || slot >= SLOTS || !slotOpen(player, day, slot)) return false
-  const card = column[slot]
-  if (card) {
-    const above = column[slot - 1]
-    const below = column[slot + 1]
-    if (!(above && above.placedAt > card.placedAt) && !(below && below.placedAt > card.placedAt)) return false
+  const horizontal = incoming.orientation === 'horizontal'
+  if (!column || !Number.isInteger(slot) || slot < 0 || slot >= (horizontal ? 4 : SLOTS) ||
+      (horizontal && !player[day + 1]) || !slotOpen(player, day, slot, horizontal)) return false
+  const grid = visibleGrid(player)
+  const secondDay = horizontal ? day + 1 : day
+  const secondRow = horizontal ? slot : slot + 1
+  const firstCovered = grid[day][slot]
+  const secondCovered = grid[secondDay][secondRow]
+  if (firstCovered && firstCovered.card === secondCovered?.card) return false
+  const canCover = (d: number, row: number, next: number) => {
+    const previous = grid[d][row]
+    if (!previous) return true
+    const values = activeValues(previous.card)
+    if (!values) return true
+    const first = previous.card.orientation === 'horizontal' ? d === previous.day : row === previous.row
+    const value = first ? values.top : values.bottom
+    return value !== 0 && (next === 0 || (value < 0 ? next > 0 : next < 0))
   }
-  const visible = visibleSections(column)
-  const canCover = (previous: number | null, next: number) =>
-    previous === null || (previous !== 0 && (next === 0 || (previous < 0 ? next > 0 : next < 0)))
-  return canCover(visible[slot], incoming.top) && canCover(visible[slot + 1], incoming.bottom)
+  return canCover(day, slot, incoming.top) && canCover(secondDay, secondRow, incoming.bottom)
 }
 
 export const legalMoves = (player: Schedule, cards: Card[]) =>
   cards.flatMap((card) =>
-    player.flatMap((column, day) =>
-      column.flatMap((_, slot) => canPlace(player, day, slot, card) ? [{ card, day, slot }] : []),
+    player.flatMap((_, day) =>
+      Array.from({ length: card.orientation === 'horizontal' ? 4 : SLOTS }, (_, slot) => slot)
+        .flatMap((slot) => canPlace(player, day, slot, card) ? [{ card, day, slot }] : []),
     ),
   )
 
@@ -71,6 +87,7 @@ export function newGame(numPlayers: number, decks: WeekDecks): GameState {
     drawPicks: Array<Card | 'blind' | null>(numPlayers).fill(null),
     blindCard: null,
     blindSkip: null,
+    pendingFlip: null,
     extraTurns: null,
     weekComplete: false,
     bustColumns: Array<number | null>(numPlayers).fill(null),
@@ -89,10 +106,11 @@ export function shuffle<T>(items: T[]): T[] {
 }
 
 function finishWeek(state: GameState): GameState {
+  const bustColumns = state.schedules.map((schedule, i) => bustColumn(schedule, state.starting[i]))
   return {
     ...state,
     weekComplete: true,
-    bustColumns: state.schedules.map((schedule, i) => bustColumn(schedule, state.starting[i])),
+    bustColumns,
     gameOver: state.week === WEEKS,
     extraTurns: null,
   }
@@ -100,17 +118,25 @@ function finishWeek(state: GameState): GameState {
 
 export function completedWeekTotals(state: GameState): PlayerTotals[] {
   return state.schedules.map((schedule, i) =>
-    scheduleTotals(schedule.slice(0, state.bustColumns[i] ?? schedule.length), state.starting[i]),
+    scheduleTotals(schedule, state.starting[i], state.bustColumns[i]),
   )
 }
 
-export function winningPlayers(totals: PlayerTotals[]): number[] {
+export function finalScore(totals: PlayerTotals): number {
+  return totals.points - totals.money - totals.energy
+}
+
+export function sundayCardCount(schedule: Schedule): number {
+  return scheduleEntries(schedule).filter((entry) => entryCells(entry).some(([day]) => day === DAYS.length - 1)).length
+}
+
+export function winningPlayers(state: GameState): number[] {
+  const totals = completedWeekTotals(state)
   let candidates = totals.map((_, i) => i)
-  for (const field of ['points', 'energy', 'money'] as const) {
-    const highest = Math.max(...candidates.map((i) => totals[i][field]))
-    candidates = candidates.filter((i) => totals[i][field] === highest)
-  }
-  return candidates
+  const highest = Math.max(...totals.map(finalScore))
+  candidates = candidates.filter((i) => finalScore(totals[i]) === highest)
+  const mostCards = Math.max(...candidates.map((i) => sundayCardCount(state.schedules[i])))
+  return candidates.filter((i) => sundayCardCount(state.schedules[i]) === mostCards)
 }
 
 export function startNextWeek(state: GameState): GameState {
@@ -141,6 +167,7 @@ export function startNextWeek(state: GameState): GameState {
     drawPicks: state.starting.map(() => null),
     blindCard: null,
     blindSkip: null,
+    pendingFlip: null,
     extraTurns: null,
     weekComplete: false,
     bustColumns: state.bustColumns.map(() => null),
@@ -152,41 +179,97 @@ export function playCard(state: GameState, cardId: number, day: number, slot: nu
   const card = state.blindCard ?? state.drawArea.find((item) => item.id === cardId)
   const player = state.schedules[state.turn]
   if (
-    state.weekComplete || state.gameOver || state.error || !card || card.id !== cardId || !player || !player[day] ||
+    state.weekComplete || state.gameOver || state.error || state.pendingFlip || !card || card.id !== cardId || !player || !player[day] ||
     !canPlace(player, day, slot, card)
   ) return state
 
-  const replaced = player[day][slot]
-  const remaining = player[day].filter((item): item is ScheduledCard => item !== null && item !== replaced)
+  const horizontal = card.orientation === 'horizontal'
+  const existing = horizontal ? null : player[day][slot]
+  const replaced = existing
+  const remaining = player[day].slice(0, SLOTS).filter((item): item is ScheduledCard => item !== null && item !== replaced)
     .sort((a, b) => a.placedAt - b.placedAt)
   const placedAt = remaining.length + 1
-  const scheduledCard: ScheduledCard = { ...card, placedAt }
+  const sequence = Math.max(0, ...scheduleEntries(player).map((entry) => entry.card.sequence ?? entry.card.placedAt)) + 1
+  const scheduledCard: ScheduledCard = { ...card, placedAt, sequence, ...(horizontal ? { row: slot } : {}) }
+  const scheduledSlot = horizontal ? player[day].length : slot
   const schedules = state.schedules.map((schedule, i) =>
     i === state.turn
       ? schedule.map((column, d) => d === day
-          ? column.map((item, s) => s === slot ? scheduledCard : item ? { ...item, placedAt: remaining.indexOf(item) + 1 } : null)
+          ? horizontal ? [...column, scheduledCard]
+            : [
+              ...column.map((item, s) => s === slot ? scheduledCard : item && s < SLOTS ? { ...item, placedAt: remaining.indexOf(item) + 1 } : item),
+            ]
           : column)
       : schedule,
   )
   const extraTurns = state.extraTurns !== null
     ? state.extraTurns - 1
-    : day === DAYS.length - 1 ? state.schedules.length : null
+    : !horizontal && day === DAYS.length - 1 ? state.schedules.length : null
   const next: GameState = {
     ...state,
     schedules,
-    setAside: replaced ? [...state.setAside, { id: replaced.id, top: replaced.top, bottom: replaced.bottom }] : state.setAside,
+    setAside: replaced ? [...state.setAside, { id: replaced.id, top: replaced.top, bottom: replaced.bottom,
+      ...(replaced.orientation ? { orientation: replaced.orientation } : {}) }] : state.setAside,
     drawArea: state.blindCard ? state.drawArea : state.drawArea.filter((item) => item.id !== cardId),
     blindCard: null,
     blindSkip: state.turn === 0 ? null : state.blindSkip,
-    turn: (state.turn + 1) % state.schedules.length,
     drawPicks: state.drawPicks.map((pick, i) => i === state.turn ? state.blindCard ? 'blind' : card : pick),
-    extraTurns,
+    pendingFlip: { player: state.turn, day, slot: scheduledSlot, halves: [
+      ...(card.top === 0 ? ['top' as const] : []),
+      ...(card.bottom === 0 ? ['bottom' as const] : []),
+    ], extraTurnsAfter: extraTurns },
   }
-  return finishTurn(next)
+  return advanceFlip(next)
+}
+
+export type FlipTarget = { day: number; slot: number }
+
+export function flipTargets(state: GameState): FlipTarget[] {
+  const pending = state.pendingFlip
+  if (!pending || pending.halves.length === 0) return []
+  const { player, day, slot, halves } = pending
+  const schedule = state.schedules[player]
+  const source = schedule[day][slot]
+  if (!source) return []
+  const second = halves[0] === 'bottom'
+  const row = source.orientation === 'horizontal' ? source.row! : slot
+  const section = row + (second ? 1 : 0)
+  const positions = source.orientation === 'horizontal'
+    ? [[day + (second ? 1 : 0), row - 1], [day + (second ? 1 : 0), row + 1], [second ? day + 2 : day - 1, row]]
+    : [[day - 1, section], [day + 1, section], [day, second ? row + 2 : row - 1]]
+  const targets: FlipTarget[] = []
+  const grid = visibleGrid(schedule)
+  for (const [targetDay, targetSection] of positions) {
+    const entry = grid[targetDay]?.[targetSection]
+    if (!entry || entry.card === source) continue
+    if (!entryCells(entry).every(([d, r]) => grid[d]?.[r]?.card === entry.card)) continue
+    if (!targets.some((target) => target.day === entry.day && target.slot === entry.slot)) {
+      targets.push({ day: entry.day, slot: entry.slot })
+    }
+  }
+  return targets
+}
+
+function advanceFlip(state: GameState): GameState {
+  let pending = state.pendingFlip
+  while (pending && pending.halves.length > 0) {
+    if (flipTargets({ ...state, pendingFlip: pending }).length > 0) return { ...state, pendingFlip: pending }
+    pending = { ...pending, halves: pending.halves.slice(1) }
+  }
+  return finishTurn({ ...state, pendingFlip: null, extraTurns: pending?.extraTurnsAfter ?? null, turn: (state.turn + 1) % state.schedules.length })
+}
+
+export function flipCard(state: GameState, day: number, slot: number): GameState {
+  const pending = state.pendingFlip
+  if (!pending || !flipTargets(state).some((target) => target.day === day && target.slot === slot)) return state
+  const schedules = state.schedules.map((schedule, player) => player !== pending.player ? schedule :
+    schedule.map((column, d) => d !== day ? column :
+      column.map((card, s) => s !== slot || !card ? card : { ...card, faceDown: !card.faceDown })))
+  return advanceFlip({ ...state, schedules, pendingFlip: { ...pending, halves: pending.halves.slice(1) } })
 }
 
 export function drawBlind(state: GameState): GameState {
-  if (state.weekComplete || state.gameOver || state.error || state.blindCard || state.deck.length === 0) return state
+  if (state.weekComplete || state.gameOver || state.error || state.pendingFlip || state.blindCard || state.deck.length === 0) return state
   const [card, ...deck] = state.deck
   const next = { ...state, deck, blindCard: card, blindSkip: state.turn === 0 ? null : state.blindSkip }
   if (legalMoves(state.schedules[state.turn], [card]).length > 0) return next
@@ -247,10 +330,17 @@ function finishTurn(next: GameState): GameState {
 }
 
 export function lastPlayStatus(state: GameState): 'last' | 'possible' | null {
-  if (state.weekComplete || state.gameOver || state.error) return null
+  if (state.weekComplete || state.gameOver || state.error || state.pendingFlip) return null
   const moves = legalMoves(state.schedules[state.turn], state.blindCard ? [state.blindCard] : state.drawArea)
   if (moves.length === 0) return !state.blindCard && state.deck.length > 0 && state.extraTurns === 1 ? 'last' : null
-  const endingMoves = moves.filter((move) => playCard(state, move.card.id, move.day, move.slot).weekComplete).length
+  const endingMoves = moves.filter((move) => {
+    let next = playCard(state, move.card.id, move.day, move.slot)
+    while (next.pendingFlip) {
+      const target = flipTargets(next)[0]
+      next = flipCard(next, target.day, target.slot)
+    }
+    return next.weekComplete
+  }).length
   const blindMayEnd = !state.blindCard && state.deck.length > 0 && state.extraTurns === null &&
     state.drawPicks.every((pick, i) => i === state.turn || pick !== null) &&
     state.deck.length - 1 < state.schedules.length + 1 - state.drawArea.length

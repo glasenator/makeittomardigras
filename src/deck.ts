@@ -1,13 +1,13 @@
-export type Card = { id: number; top: number; bottom: number }
+export type Card = { id: number; top: number; bottom: number; orientation?: 'horizontal' }
+type CardValues = [number, number, 'horizontal'?]
 
-// Edit each week's list independently. Each entry is [top, bottom].
-const WEEK_1: [number, number][] = [
+// Edit each week's list independently. Entries are [top, bottom] or [left, right, 'horizontal'].
+const WEEK_1: CardValues[] = [
   [0,0],
   [0,+1],
   [+1,0],
   [+1,-1],
   [-1,+1],
-  [-1,-1],
   [0,+2],
   [+2,0],
   [+2,-2],
@@ -43,10 +43,27 @@ const WEEK_1: [number, number][] = [
   [+8,-8],
   [-8,+8],
   [-8,-8],
+  [0,0, 'horizontal'],
+  [-1,+1, 'horizontal'],
+  [+1,-1, 'horizontal'],
+  [-2,+2, 'horizontal'],
+  [+2,-2, 'horizontal'],
+  [-3,+3, 'horizontal'],
+  [+3,-3, 'horizontal'],
+  [-4,+4, 'horizontal'],
+  [+4,-4, 'horizontal'],
+  [-5,+5, 'horizontal'],
+  [+5,-5, 'horizontal'],
+  [-6,+6, 'horizontal'],
+  [+6,-6, 'horizontal'],
+  [-7,+7, 'horizontal'],
+  [+7,-7, 'horizontal'],
+  [-8,+8, 'horizontal'],
+  [+8,-8, 'horizontal'],
 ]
 
 // Weeks 2 and 3 use placeholder values until their cards are designed.
-const WEEK_2: [number, number][] = [
+const WEEK_2: CardValues[] = [
   [0,0],
   [0,+2],
   [+2,0],
@@ -88,9 +105,26 @@ const WEEK_2: [number, number][] = [
   [+9,-9],
   [-9,+9],
   [-9,-9],
+  [0,0, 'horizontal'],
+  [-2,+2, 'horizontal'],
+  [+2,-2, 'horizontal'],
+  [-3,+3, 'horizontal'],
+  [+3,-3, 'horizontal'],
+  [-4,+4, 'horizontal'],
+  [+4,-4, 'horizontal'],
+  [-5,+5, 'horizontal'],
+  [+5,-5, 'horizontal'],
+  [-6,+6, 'horizontal'],
+  [+6,-6, 'horizontal'],
+  [-7,+7, 'horizontal'],
+  [+7,-7, 'horizontal'],
+  [-8,+8, 'horizontal'],
+  [+8,-8, 'horizontal'],
+  [-9,+9, 'horizontal'],
+  [+9,-9, 'horizontal'],
 ]
 
-const WEEK_3: [number, number][] = [
+const WEEK_3: CardValues[] = [
   [0,0],
   [0,+3],
   [+3,0],
@@ -132,13 +166,35 @@ const WEEK_3: [number, number][] = [
   [+10,-10],
   [-10,+10],
   [-10,-10],
+  [0,0, 'horizontal'],
+  [-3,+3, 'horizontal'],
+  [+3,-3, 'horizontal'],
+  [-4,+4, 'horizontal'],
+  [+4,-4, 'horizontal'],
+  [-5,+5, 'horizontal'],
+  [+5,-5, 'horizontal'],
+  [-6,+6, 'horizontal'],
+  [+6,-6, 'horizontal'],
+  [-7,+7, 'horizontal'],
+  [+7,-7, 'horizontal'],
+  [-8,+8, 'horizontal'],
+  [+8,-8, 'horizontal'],
+  [-9,+9, 'horizontal'],
+  [+9,-9, 'horizontal'],
+  [-10,+10, 'horizontal'],
+  [+10,-10, 'horizontal'],
 ]
 
 export type WeekDecks = [Card[], Card[], Card[]]
 
 export function makeDecks(): WeekDecks {
   let id = 0
-  const create = (values: [number, number][]): Card[] =>
-    values.map(([top, bottom]) => ({ id: ++id, top, bottom }))
+  const create = (values: CardValues[]): Card[] =>
+    values.map(([top, bottom, orientation]) => ({
+      id: ++id,
+      top,
+      bottom,
+      ...(orientation ? { orientation } : {}),
+    }))
   return [create(WEEK_1), create(WEEK_2), create(WEEK_3)]
 }
