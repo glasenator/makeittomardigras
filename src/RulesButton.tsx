@@ -83,10 +83,10 @@ function RulesButton() {
           <h3>4. Count your schedule</h3>
           <p>Each column has four number sections. From top to bottom, they count as:</p>
           <ol className="rules-scoring">
-            <li><strong>Carnival points</strong></li>
-            <li><strong>Money</strong></li>
-            <li><strong>Energy</strong></li>
-            <li><strong>Carnival points</strong></li>
+            <li className="score-points"><strong>Carnival points</strong></li>
+            <li className="score-money"><strong>Money</strong></li>
+            <li className="score-energy"><strong>Energy</strong></li>
+            <li className="score-points"><strong>Carnival points</strong></li>
           </ol>
           <p>Only visible values count; covered values do not. Add visible money and energy to your starting amounts. Your carnival-point total appears beside your schedule; your running money and energy appear on the card at its right.</p>
         </section>
@@ -99,7 +99,7 @@ function RulesButton() {
           <ul>
             <li>If both are zero or higher, no columns are busted. This is true even if a resource was negative earlier.</li>
             <li>If either is negative, start with your starting amounts and add each column from left to right. Find the first column where money or energy drops below zero. Gray out that column and every column after it; all their values, including carnival points, count as zero. If a horizontal card crosses the bust line, its section before the line still counts. Busting does not turn cards over.</li>
-            <li>In week 3, you cannot bust on Mardi Gras Tuesday. If a resource first drops below zero in Tuesday, keep Tuesday&apos;s carnival points and count that resource as zero instead. Tuesday is not grayed out for a bust that starts there; a bust from an earlier day still grays it out.</li>
+            <li className="rules-important">In week 3, you cannot bust on Mardi Gras Tuesday. If a resource first drops below zero in Tuesday, keep Tuesday&apos;s carnival points and count that resource as zero instead. Tuesday is not grayed out for a bust that starts there; a bust from an earlier day still grays it out.</li>
           </ul>
           <h4>Start the next week</h4>
           <p>Carry each player&apos;s remaining carnival points, money, and energy into the next week. The player with the fewest carried-over carnival points starts weeks 2 and 3. If players tie, the first tied player clockwise from the previous week&apos;s starting player goes first.</p>

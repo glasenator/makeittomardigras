@@ -20,7 +20,7 @@ const steps: Step[] = [
     title: 'Pick a card',
     content: (
       <>
-        <p>On your turn, take a face-up card from the draw area or draw blind from the deck. Place that card in your schedule. Play then passes clockwise.</p>
+        <p>On your turn, drag a face-up card to a highlighted space, or tap a card and then tap a highlighted space. Play then passes clockwise.</p>
         <div className="walkthrough-example">
           <strong>Example: 3 players</strong>
           <p>The draw area starts with one more card than the number of players. With 3 players, that is 4 cards. If everyone takes a face-up card, one card remains.</p>
@@ -31,7 +31,7 @@ const steps: Step[] = [
             <span className="walkthrough-card" aria-hidden="true"><span>+1</span><span>+3</span></span>
           </div>
         </div>
-        <p>The deck shows the top card&apos;s back. A double-negative card shows its positive values; other backs are blank. A blind draw reveals the card&apos;s front, which you must play. If you have no legal placement, set it aside and skip your turn. A blind draw also makes you ineligible to start the next draw. After everyone takes a turn, leave unpicked cards in place and refill the draw area.</p>
+        <p>The deck shows the top card&apos;s back. A double-negative card shows its positive values; other backs are blank. When you draw blind, its front is revealed and automatically selected for you to place. If you have no legal placement, it is set aside and your turn is skipped. A blind draw also makes you ineligible to start the next draw. After everyone takes a turn, leave unpicked cards in place and refill the draw area.</p>
       </>
     ),
   },

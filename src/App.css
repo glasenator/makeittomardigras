@@ -233,7 +233,12 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .rules-dialog p { margin: 0.5rem 0; }
 .rules-dialog ul, .rules-dialog ol { padding-left: 1.5rem; margin: 0.5rem 0; }
 .rules-dialog li + li { margin-top: 0.5rem; }
-.rules-scoring { background: #f7f0d7; border-radius: 8px; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.rules-dialog .rules-important { margin-left: -0.5rem; padding: 0.6rem 0.7rem; border-left: 4px solid #d5a82f; border-radius: 0 7px 7px 0; background: #f5e9be; font-weight: 700; }
+.rules-scoring { display: grid; gap: 0.25rem; border-radius: 8px; padding: 0.4rem; }
+.rules-scoring li { padding: 0.3rem 0.5rem; border-radius: 5px; }
+.rules-scoring .score-points { background: #ead7f2; color: #49215e; }
+.rules-scoring .score-money { background: #dcefe1; color: #14583e; }
+.rules-scoring .score-energy { background: #fff0c8; color: #674b11; }
 .rules-scoring li + li { margin-top: 0.15rem; }
 .walkthrough-dialog { width: min(36rem, calc(100% - 2rem)); }
 .walkthrough-dialog .rules-heading { gap: 0.5rem; }
@@ -695,7 +700,12 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
 .rules-dialog h2, .rules-dialog h3, .walkthrough-dialog h2, .walkthrough-dialog h3 { color: #ffe18a; }
 .rules-kicker, .walkthrough-progress { color: #62d6a7; }
 .rules-intro { color: #ead9f2; }
+.rules-dialog .rules-important { border-left-color: #ffd957; background: linear-gradient(100deg, #553c18, #332719); color: #fff0b7; box-shadow: inset 0 0 18px #f4c74412; }
 .rules-scoring, .walkthrough-example { border: 1px solid #9f7a30; border-radius: 7px; background: #302719; color: #f6e8c5; }
+.rules-dialog .rules-scoring { background: transparent; }
+.rules-dialog .rules-scoring .score-points { background: #49215e; color: #f0d9fc; box-shadow: inset 3px 0 #bd75df; }
+.rules-dialog .rules-scoring .score-money { background: #164f3a; color: #d8ffe7; box-shadow: inset 3px 0 #39ce9b; }
+.rules-dialog .rules-scoring .score-energy { background: #594218; color: #fff1c1; box-shadow: inset 3px 0 #f2cf57; }
 .walkthrough-example > strong { color: #e8bd54; }
 .walkthrough-card { border-color: #d5ad42; border-radius: 5px; background: #f5e6bf; color: #371c48; }
 .walkthrough-card > span + span { border-color: #8d702c; }
