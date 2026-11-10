@@ -1,7 +1,7 @@
 import type { Card, WeekDecks } from './deck'
-import { activeValues, bustColumn, entryCells, scheduleEntries, scheduleTotals, STARTING_VALUES, visibleGrid, type PlayerTotals, type Schedule, type ScheduledCard } from './scheduleTotals'
+import { activeValues, bustColumn, entryCells, scheduleEntries, scheduleTotals, scheduleTotalsAfterBust, STARTING_VALUES, visibleGrid, type PlayerTotals, type Schedule, type ScheduledCard } from './scheduleTotals'
 
-export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+export const DAYS = ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue']
 export const SLOTS = 3
 export const WEEKS = 3
 export type { Schedule } from './scheduleTotals'
@@ -21,6 +21,8 @@ export type GameState = {
   blindSkip: { player: number; card: Card } | null
   pendingFlip: { player: number; day: number; slot: number; halves: ('top' | 'bottom')[]; extraTurnsAfter: number | null } | null
   extraTurns: number | null
+  finalTurnTrigger: number | null
+  finalTurnOrder: number[] | null
   weekComplete: boolean
   bustColumns: (number | null)[]
   gameOver: boolean
@@ -89,6 +91,8 @@ export function newGame(numPlayers: number, decks: WeekDecks): GameState {
     blindSkip: null,
     pendingFlip: null,
     extraTurns: null,
+    finalTurnTrigger: null,
+    finalTurnOrder: null,
     weekComplete: false,
     bustColumns: Array<number | null>(numPlayers).fill(null),
     gameOver: false,
@@ -106,27 +110,32 @@ export function shuffle<T>(items: T[]): T[] {
 }
 
 function finishWeek(state: GameState): GameState {
-  const bustColumns = state.schedules.map((schedule, i) => bustColumn(schedule, state.starting[i]))
+  const bustColumns = state.schedules.map((schedule, i) => bustColumn(schedule, state.starting[i], state.week === WEEKS))
   return {
     ...state,
     weekComplete: true,
     bustColumns,
     gameOver: state.week === WEEKS,
     extraTurns: null,
+    finalTurnTrigger: null,
+    finalTurnOrder: null,
   }
 }
 
 export function completedWeekTotals(state: GameState): PlayerTotals[] {
-  return state.schedules.map((schedule, i) =>
-    scheduleTotals(schedule, state.starting[i], state.bustColumns[i]),
-  )
+  return state.schedules.map((schedule, i) => {
+    if (state.week === WEEKS && state.bustColumns[i] === null) {
+      return scheduleTotalsAfterBust(schedule, state.starting[i], true)
+    }
+    return scheduleTotals(schedule, state.starting[i], state.bustColumns[i])
+  })
 }
 
 export function finalScore(totals: PlayerTotals): number {
   return totals.points - totals.money - totals.energy
 }
 
-export function sundayCardCount(schedule: Schedule): number {
+export function tuesdayCardCount(schedule: Schedule): number {
   return scheduleEntries(schedule).filter((entry) => entryCells(entry).some(([day]) => day === DAYS.length - 1)).length
 }
 
@@ -135,8 +144,8 @@ export function winningPlayers(state: GameState): number[] {
   let candidates = totals.map((_, i) => i)
   const highest = Math.max(...totals.map(finalScore))
   candidates = candidates.filter((i) => finalScore(totals[i]) === highest)
-  const mostCards = Math.max(...candidates.map((i) => sundayCardCount(state.schedules[i])))
-  return candidates.filter((i) => sundayCardCount(state.schedules[i]) === mostCards)
+  const mostCards = Math.max(...candidates.map((i) => tuesdayCardCount(state.schedules[i])))
+  return candidates.filter((i) => tuesdayCardCount(state.schedules[i]) === mostCards)
 }
 
 export function startNextWeek(state: GameState): GameState {
@@ -169,6 +178,8 @@ export function startNextWeek(state: GameState): GameState {
     blindSkip: null,
     pendingFlip: null,
     extraTurns: null,
+    finalTurnTrigger: null,
+    finalTurnOrder: null,
     weekComplete: false,
     bustColumns: state.bustColumns.map(() => null),
     error: deck.length < count ? `The deck needs at least ${count} cards to start a week.` : null,
@@ -204,10 +215,13 @@ export function playCard(state: GameState, cardId: number, day: number, slot: nu
   )
   const extraTurns = state.extraTurns !== null
     ? state.extraTurns - 1
-    : !horizontal && day === DAYS.length - 1 ? state.schedules.length : null
+    : null
+  const finalTurnTrigger = state.finalTurnTrigger ??
+    (state.finalTurnOrder === null && !horizontal && day === DAYS.length - 1 ? state.turn : null)
   const next: GameState = {
     ...state,
     schedules,
+    finalTurnTrigger,
     setAside: replaced ? [...state.setAside, { id: replaced.id, top: replaced.top, bottom: replaced.bottom,
       ...(replaced.orientation ? { orientation: replaced.orientation } : {}) }] : state.setAside,
     drawArea: state.blindCard ? state.drawArea : state.drawArea.filter((item) => item.id !== cardId),
@@ -256,7 +270,12 @@ function advanceFlip(state: GameState): GameState {
     if (flipTargets({ ...state, pendingFlip: pending }).length > 0) return { ...state, pendingFlip: pending }
     pending = { ...pending, halves: pending.halves.slice(1) }
   }
-  return finishTurn({ ...state, pendingFlip: null, extraTurns: pending?.extraTurnsAfter ?? null, turn: (state.turn + 1) % state.schedules.length })
+  return finishTurn({
+    ...state,
+    pendingFlip: null,
+    extraTurns: pending?.extraTurnsAfter ?? null,
+    turn: state.finalTurnOrder === null ? (state.turn + 1) % state.schedules.length : state.turn,
+  })
 }
 
 export function flipCard(state: GameState, day: number, slot: number): GameState {
@@ -278,7 +297,7 @@ export function drawBlind(state: GameState): GameState {
     blindCard: null,
     blindSkip: { player: state.turn, card },
     setAside: [...state.setAside, card],
-    turn: (state.turn + 1) % state.schedules.length,
+    turn: state.finalTurnOrder === null ? (state.turn + 1) % state.schedules.length : state.turn,
     drawPicks: state.drawPicks.map((pick, i) => i === state.turn ? 'blind' : pick),
     extraTurns: state.extraTurns === null ? null : state.extraTurns - 1,
   })
@@ -286,11 +305,62 @@ export function drawBlind(state: GameState): GameState {
 
 function finishTurn(next: GameState): GameState {
   const extraTurns = next.extraTurns
+  if (next.finalTurnOrder !== null) {
+    if (extraTurns === 0) return finishWeek(next)
+    const remaining = next.finalTurnOrder.slice(1)
+    if (remaining.length === 0) return finishWeek(next)
+    return {
+      ...next,
+      turn: remaining[0],
+      finalTurnOrder: remaining,
+      drawPicks: next.drawPicks.map(() => null),
+    }
+  }
   if (extraTurns === 0) return finishWeek(next)
   if (extraTurns !== null && next.drawArea.length + next.deck.length < extraTurns) {
     return { ...next, error: 'Not enough cards for the remaining extra turns. Add more cards to the deck and start a new game.' }
   }
   if (next.drawPicks.some((pick) => pick === null)) return next
+
+  const picks = next.drawPicks
+  const clockwiseRank = (player: number) => (player - next.drawStarter - 1 + picks.length) % picks.length
+  if (next.finalTurnTrigger !== null) {
+    const finalTurnOrder = picks
+      .map((pick, player) => ({ pick, player }))
+      .filter(({ player }) => player !== next.finalTurnTrigger)
+      .sort((a, b) => {
+        const aCard = a.pick !== null && a.pick !== 'blind' ? a.pick : null
+        const bCard = b.pick !== null && b.pick !== 'blind' ? b.pick : null
+        if (aCard && bCard) {
+          const sumDifference = aCard.top + aCard.bottom - bCard.top - bCard.bottom
+          if (sumDifference !== 0) return sumDifference
+          const lowDifference = Math.min(aCard.top, aCard.bottom) - Math.min(bCard.top, bCard.bottom)
+          if (lowDifference !== 0) return lowDifference
+        } else if (aCard || bCard) {
+          return aCard ? -1 : 1
+        }
+        return clockwiseRank(a.player) - clockwiseRank(b.player)
+      })
+      .map(({ player }) => player)
+    const count = next.schedules.length + 1 - next.drawArea.length
+    const available = [...next.drawArea, ...next.deck]
+    if (available.length < finalTurnOrder.length) {
+      return { ...next, error: 'Not enough cards for the remaining extra turns. Add more cards to the deck and start a new game.' }
+    }
+    const refilledArea = next.deck.length >= count
+      ? [...next.drawArea, ...next.deck.slice(0, count)]
+      : available
+    const remainingDeck = next.deck.length >= count ? next.deck.slice(count) : []
+    return {
+      ...next,
+      deck: remainingDeck,
+      drawArea: refilledArea,
+      drawPicks: next.drawPicks.map(() => null),
+      extraTurns: finalTurnOrder.length,
+      finalTurnOrder,
+      turn: finalTurnOrder[0],
+    }
+  }
 
   const count = next.schedules.length + 1 - next.drawArea.length
   if (next.deck.length < count) {
@@ -304,7 +374,6 @@ function finishTurn(next: GameState): GameState {
     return finishWeek(next)
   }
 
-  const picks = next.drawPicks
   const pickedCards = picks.filter((pick): pick is Card => pick !== null && pick !== 'blind')
   const minimumSum = Math.min(...pickedCards.map((pick) => pick.top + pick.bottom))
   const minimumNumber = Math.min(...pickedCards
@@ -318,7 +387,6 @@ function finishTurn(next: GameState): GameState {
       Math.min(pick.top, pick.bottom) === minimumNumber
   })
   const starter = nextStarter ?? (next.drawStarter + 1) % picks.length
-
   return {
     ...next,
     drawArea: [...next.drawArea, ...next.deck.slice(0, count)],
@@ -333,17 +401,19 @@ export function lastPlayStatus(state: GameState): 'last' | 'possible' | null {
   if (state.weekComplete || state.gameOver || state.error || state.pendingFlip) return null
   const moves = legalMoves(state.schedules[state.turn], state.blindCard ? [state.blindCard] : state.drawArea)
   if (moves.length === 0) return !state.blindCard && state.deck.length > 0 && state.extraTurns === 1 ? 'last' : null
+  let startsFinalTurns = false
   const endingMoves = moves.filter((move) => {
     let next = playCard(state, move.card.id, move.day, move.slot)
     while (next.pendingFlip) {
       const target = flipTargets(next)[0]
       next = flipCard(next, target.day, target.slot)
     }
+    if (state.finalTurnTrigger === null && next.finalTurnTrigger !== null) startsFinalTurns = true
     return next.weekComplete
   }).length
   const blindMayEnd = !state.blindCard && state.deck.length > 0 && state.extraTurns === null &&
     state.drawPicks.every((pick, i) => i === state.turn || pick !== null) &&
     state.deck.length - 1 < state.schedules.length + 1 - state.drawArea.length
-  if (endingMoves === 0) return blindMayEnd ? 'possible' : null
+  if (endingMoves === 0) return blindMayEnd || startsFinalTurns ? 'possible' : null
   return endingMoves === moves.length && (state.blindCard || state.deck.length === 0 || state.extraTurns === 1) ? 'last' : 'possible'
 }

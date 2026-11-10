@@ -270,7 +270,7 @@ test('vertical FLIPs can target an uncovered horizontal card but not a partially
   assert.ok(!flipTargets(state).some((target) => target.day === 0 && target.slot === 3))
 })
 
-test('Friday and Saturday do not trigger final turns; Sunday vertical placement does', () => {
+test('Sunday and Monday do not trigger final turns; Tuesday vertical placement does', () => {
   const schedule = empty()
   schedule[2][0] = vertical(1, 1, 1)
   let state = playCard(stateWith(incoming(99, 2, -2), schedule), 99, 3, 0)
@@ -285,7 +285,8 @@ test('Friday and Saturday do not trigger final turns; Sunday vertical placement 
   assert.equal(state.extraTurns, null)
   state = { ...state, turn: 0, drawArea: [{ id: 96, top: 3, bottom: 2 }, ...state.drawArea] }
   state = playCard(state, 96, 6, 1)
-  assert.equal(state.extraTurns, 2)
+  assert.equal(state.finalTurnTrigger, 0)
+  assert.equal(state.extraTurns, null)
 })
 
 test('a horizontal card scores its earlier section across the bust boundary', () => {

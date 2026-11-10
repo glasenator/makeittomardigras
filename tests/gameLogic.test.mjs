@@ -10,7 +10,7 @@ const result = await build({
   format: 'esm',
   platform: 'node',
 })
-const { canPlace, completedWeekTotals, drawBlind, finalScore, lastPlayStatus, legalMoves, newGame: createGame, playCard, startNextWeek, sundayCardCount, winningPlayers } = await import(
+const { canPlace, completedWeekTotals, drawBlind, finalScore, lastPlayStatus, legalMoves, newGame: createGame, playCard, startNextWeek, tuesdayCardCount, winningPlayers } = await import(
   `data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`
 )
 const { visibleSections } = await import(
@@ -110,27 +110,41 @@ test('a short deck ends a week, carrying scores and resources to the next deck',
   assert.deepEqual(allCards(state).map((card) => card.id).sort((a, b) => a - b), cards.map((card) => card.id))
 })
 
-test('seventh-column placement grants exactly one more turn to each player', () => {
-  const cards = deck(40)
-  let state = newGame(2, cards)
-  for (let day = 0; day < 6; day++) {
-    state = pick(state, day, 0)
-    state = pick(state, day, 0)
+test('Tuesday trigger sits out while remaining final turns follow picked-card values', () => {
+  const cards = [
+    { id: 1, top: 1, bottom: 1 },
+    { id: 2, top: 3, bottom: 2 },
+    { id: 3, top: -1, bottom: -1 },
+    ...deck(9).map((card, i) => ({ ...card, id: i + 4 })),
+  ]
+  let state = newGame(3, cards)
+  state.schedules[0][5][0] = { id: 90, top: 1, bottom: -1, placedAt: 1 }
+  state = {
+    ...state,
+    turn: 0,
+    drawPicks: [null, null, null],
+    drawArea: cards.slice(0, 4),
+    deck: cards.slice(4),
   }
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 2)
-  assert.equal(state.turn, 1)
-  state = pick(state, 6, 0)
-  assert.equal(state.week, 1)
-  assert.equal(state.extraTurns, 1)
-  assert.equal(state.turn, 0)
-  state = pick(state, 6, 1)
-  assert.equal(state.weekComplete, true)
-  state = startNextWeek(state)
-  assert.equal(state.week, 2)
+  state = playCard(state, 1, 6, 0)
+  assert.equal(state.finalTurnTrigger, 0)
   assert.equal(state.extraTurns, null)
-  assert.equal(state.starting[0].points > 0, true)
-  assert.equal(allCards(state).length, cards.length)
+  assert.equal(state.turn, 1)
+
+  state = playCard(state, 2, 0, 1)
+  state = playCard(state, 3, 0, 1)
+  assert.deepEqual(state.finalTurnOrder, [2, 1])
+  assert.equal(state.extraTurns, 2)
+  assert.equal(state.turn, 2)
+
+  state = pick(state, 0, 0)
+  assert.equal(state.turn, 1)
+  assert.equal(state.extraTurns, 1)
+  state = pick(state, 0, 0)
+  assert.equal(state.weekComplete, true)
+  assert.equal(state.finalTurnTrigger, null)
+  assert.equal(state.finalTurnOrder, null)
+  assert.equal(allCards(state).filter((card) => cards.some((original) => original.id === card.id)).length, cards.length)
 })
 
 test('game ends after the third week and retains final schedules and scores', () => {
@@ -148,56 +162,17 @@ test('game ends after the third week and retains final schedules and scores', ()
   assert.equal(playCard(state, state.drawArea[0].id, 1, 0), state)
 })
 
-test('the last available card can complete the extra turns', () => {
+test('shortage of cards for value-ordered final turns is explicit', () => {
   const cards = deck(40)
   let state = newGame(2, cards)
-  for (let day = 0; day < 6; day++) {
-    state = pick(state, day, 0)
-    state = pick(state, day, 0)
-  }
-  state = { ...state, deck: [] }
-  state = pick(state, 6, 0)
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 1)
-  assert.equal(state.drawArea.length, 1)
-  state = pick(state, 6, 1)
-  state = startNextWeek(state)
-  assert.equal(state.week, 2)
-})
-
-test('shortage during extra turns is explicit and does not end the week early', () => {
-  const cards = deck(40)
-  let state = newGame(2, cards)
-  for (let day = 0; day < 6; day++) {
-    state = pick(state, day, 0)
-    state = pick(state, day, 0)
-  }
+  state.schedules[0][5][0] = { id: 90, top: 1, bottom: -1, placedAt: 1 }
   state = { ...state, deck: [], drawArea: state.drawArea.slice(0, 2) }
-  state = pick(state, 6, 0)
+  state = playCard(state, state.drawArea[0].id, 6, 0)
   assert.equal(state.week, 1)
-  assert.equal(state.extraTurns, 2)
+  assert.equal(state.finalTurnTrigger, 0)
+  state = playCard(state, state.drawArea[0].id, 0, 1)
+  assert.equal(state.weekComplete, false)
   assert.match(state.error, /Not enough cards/)
-})
-
-test('five players each receive one additional turn after a seventh-column placement', () => {
-  const cards = deck(100)
-  let state = newGame(5, cards)
-  for (let day = 0; day < 6; day++) {
-    for (let player = 0; player < 5; player++) state = pick(state, day, 0)
-  }
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 5)
-  for (let player = 1; player < 5; player++) {
-    assert.equal(state.turn, player)
-    state = pick(state, 6, 0)
-    assert.equal(state.week, 1)
-  }
-  assert.equal(state.extraTurns, 1)
-  assert.equal(state.turn, 0)
-  state = pick(state, 6, 1)
-  state = startNextWeek(state)
-  assert.equal(state.week, 2)
-  assert.equal(allCards(state).length, 100)
 })
 
 test('too-small decks and invalid placements are handled without losing cards', () => {
@@ -447,48 +422,6 @@ test('starting order is not reset when a pick ends the draw cycle mid-week', () 
   assert.equal(state.turn, 0)
 })
 
-test('refill during final turns retains clockwise order instead of changing starter', () => {
-  const cards = deck(40)
-  let state = newGame(2, cards)
-  for (let day = 0; day < 6; day++) {
-    state = pick(state, day, 0)
-    state = pick(state, day, 0)
-  }
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 2)
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 1)
-  assert.equal(state.turn, 0)
-  state = pick(state, 6, 1)
-  state = startNextWeek(state)
-  assert.equal(state.week, 2)
-  assert.equal(state.turn, 0)
-  assert.deepEqual(state.drawPicks, [null, null])
-})
-
-test('final turns stay clockwise across a refill when the trigger is not the first picker', () => {
-  const cards = deck(40)
-  let state = newGame(3, cards)
-  const schedules = state.schedules.map((schedule, player) =>
-    schedule.map((column, day) => day < 6
-      ? [{ id: -1 - player * 6 - day, top: 1, bottom: 1, placedAt: 1 }, ...column.slice(1)]
-      : column),
-  )
-  state = { ...state, schedules, turn: 2, drawStarter: 1, drawPicks: [null, { id: -20, top: -50, bottom: -50 }, null], drawArea: cards.slice(0, 3), deck: cards.slice(3) }
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 3)
-  assert.equal(state.turn, 0)
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 2)
-  assert.equal(state.turn, 1)
-  state = pick(state, 6, 0)
-  assert.equal(state.extraTurns, 1)
-  assert.equal(state.turn, 2)
-  state = pick(state, 6, 1)
-  state = startNextWeek(state)
-  assert.equal(state.week, 2)
-})
-
 test('a final-turn refill keeps the leftover with exactly enough cards in the deck', () => {
   const cards = deck(10)
   let state = newGame(2, cards)
@@ -694,6 +627,28 @@ test('final week applies busting before displaying final scores', () => {
   assert.equal(startNextWeek(state), state)
 })
 
+test('negative resources first reached on final Tuesday count as zero without graying Tuesday', () => {
+  let state = newGame(2, deck(4))
+  state = {
+    ...state,
+    week: 3,
+    extraTurns: 1,
+    starting: [{ money: 5, energy: 5, points: 10 }, state.starting[1]],
+    schedules: state.schedules.map((schedule, i) => i === 0
+      ? schedule.map((column, day) => day === 6
+        ? [{ id: 101, top: 4, bottom: -7, placedAt: 1 }, null, null]
+        : column)
+      : schedule),
+    drawArea: [{ id: 99, top: 2, bottom: 2 }, ...state.drawArea.slice(1)],
+  }
+
+  state = playCard(state, 99, 6, 2)
+
+  assert.equal(state.gameOver, true)
+  assert.deepEqual(state.bustColumns, [null, null])
+  assert.deepEqual(completedWeekTotals(state)[0], { money: 0, energy: 7, points: 16 })
+})
+
 test('final scores subtract money and energy, including negative final scores', () => {
   const state = newGame(2, deck(4))
   state.starting = [{ points: 30, money: 15, energy: 15 }, { points: 12, money: 5, energy: 5 }]
@@ -713,7 +668,7 @@ test('final scoring uses resources and points after busting', () => {
   assert.deepEqual(winningPlayers(state), [0])
 })
 
-test('final ties count all cards touching Sunday, including covered, horizontal and busted cards', () => {
+test('final ties count all cards touching Tuesday, including covered, horizontal and busted cards', () => {
   const state = newGame(3, deck(4))
   state.starting = [
     { points: 20, money: 5, energy: 5 },
@@ -731,7 +686,7 @@ test('final ties count all cards touching Sunday, including covered, horizontal 
   state.schedules[2][6][2] = { id: 108, top: 1, bottom: 1, placedAt: 3 }
   state.schedules[2][5].push({ id: 109, top: 1, bottom: 1, orientation: 'horizontal', row: 0, placedAt: 4 })
   state.schedules[2][5].push({ id: 110, top: 1, bottom: 1, orientation: 'horizontal', row: 0, placedAt: 5 })
-  assert.deepEqual(state.schedules.map(sundayCardCount), [1, 4, 5])
+  assert.deepEqual(state.schedules.map(tuesdayCardCount), [1, 4, 5])
   assert.deepEqual(winningPlayers(state), [1])
   state.schedules[0][5].push({ id: 111, top: 1, bottom: 1, orientation: 'horizontal', row: 0, placedAt: 2 })
   state.schedules[0][6][1] = { id: 112, top: 1, bottom: 1, placedAt: 3 }

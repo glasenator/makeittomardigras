@@ -5,7 +5,7 @@ import { transformWithEsbuild } from 'vite'
 
 const source = await readFile(new URL('../src/scheduleTotals.ts', import.meta.url), 'utf8')
 const { code: javascript } = await transformWithEsbuild(source, 'scheduleTotals.ts')
-const { bustColumn, scheduleTotals } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`)
+const { bustColumn, scheduleTotals, scheduleTotalsAfterBust } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`)
 
 const cards = [
   { id: 1, top: 1, bottom: 2, placedAt: 3 },
@@ -68,6 +68,18 @@ test('busting uses the first negative resource column when final resources are n
   assert.equal(bustColumn([column(1, -5, 0), column(2, 0, -6)], starting), 1)
   assert.equal(bustColumn([column(1, -6, 0), column(2, 2, 0)], starting), null)
   assert.equal(bustColumn([column(1, 0, 0)], starting), null)
+})
+
+test('week-three Mardi Gras Tuesday prevents a bust on that column and floors negative resources at zero', () => {
+  const schedule = Array.from({ length: 7 }, () => [null, null, null])
+  schedule[6][0] = { id: 1, top: 4, bottom: -7, placedAt: 1 }
+  const starting = { money: 5, energy: 5, points: 10 }
+  assert.equal(bustColumn(schedule, starting, true), null)
+  assert.deepEqual(scheduleTotalsAfterBust(schedule, starting, true), { money: 0, energy: 5, points: 14 })
+
+  schedule[5][0] = { id: 2, top: 1, bottom: -6, placedAt: 1 }
+  assert.equal(bustColumn(schedule, starting, true), 5)
+  assert.deepEqual(scheduleTotalsAfterBust(schedule, starting, true), { money: 5, energy: 5, points: 10 })
 })
 
 test('bust calculation uses visible overlap values and carried starting resources', () => {

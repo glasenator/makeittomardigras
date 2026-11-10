@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode } from 'react'
 import { makeDecks, type Card, type WeekDecks } from './deck'
-import { canPlace, completedWeekTotals, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, sundayCardCount, WEEKS, winningPlayers } from './gameLogic'
+import { canPlace, completedWeekTotals, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, tuesdayCardCount, WEEKS, winningPlayers } from './gameLogic'
 import { activeValues, backValues, scheduleTotals } from './scheduleTotals'
 import { formatValue } from './formatValue'
 import RulesButton from './RulesButton'
@@ -47,30 +47,18 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
   const [state, setState] = useState(() => newGame(numPlayers, shuffledDecks()))
 
   const grab = useRef({ x: 0, y: 0, w: 0 }) // cursor offset within the dragged card
+  const touchDrag = useRef<{ pointerId: number; card: Card; startX: number; startY: number; offsetX: number; offsetY: number; active: boolean } | null>(null)
+  const suppressCardClick = useRef(false)
+  const scheduleRef = useRef<HTMLDivElement>(null)
   const gameOverHeading = useRef<HTMLHeadingElement>(null)
   const [draggedCard, setDraggedCard] = useState<Card | null>(null)
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [hover, setHover] = useState<{ day: number; slot: number } | null>(null)
 
   const clearDrag = useCallback(() => {
     setDraggedCard(null)
     setHover(null)
   }, [])
-
-  useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.hidden) clearDrag()
-    }
-    window.addEventListener('blur', clearDrag)
-    window.addEventListener('dragend', clearDrag)
-    window.addEventListener('drop', clearDrag)
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    return () => {
-      window.removeEventListener('blur', clearDrag)
-      window.removeEventListener('dragend', clearDrag)
-      window.removeEventListener('drop', clearDrag)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-    }
-  }, [clearDrag])
 
   const isOver = state.gameOver
   useEffect(() => {
@@ -85,7 +73,77 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
 
   const pick = useCallback((card: Card, day: number, slot: number) => {
     setState((s) => playCard(s, card.id, day, slot))
+    setSelectedCard(null)
   }, [])
+
+  const spotAtPosition = useCallback((clientX: number, clientY: number, card: Card, offsetX: number, offsetY: number) => {
+    const daysContainer = scheduleRef.current
+    if (!daysContainer) return null
+    const days = Array.from(daysContainer.querySelectorAll<HTMLElement>('.day-inner'))
+    const cardW = days[0]?.getBoundingClientRect().width
+    if (!cardW) return null
+    const centerX = clientX - offsetX + cardW / 2
+    const day = days.findIndex((el) => {
+      const r = el.getBoundingClientRect()
+      return centerX >= r.left && centerX <= r.right
+    })
+    if (day < 0) return null
+    const rect = days[day].getBoundingClientRect()
+    const slot = Math.min(Math.max(Math.round((clientY - offsetY - rect.top) / (rect.height / 4)), 0), card.orientation === 'horizontal' ? SLOTS : SLOTS - 1)
+    return canPlace(state.schedules[0], day, slot, card) ? { day, slot } : null
+  }, [state.schedules])
+
+  useEffect(() => {
+    const onPointerMove = (event: PointerEvent) => {
+      const drag = touchDrag.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+      if (!drag.active && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 8) return
+      if (!drag.active) {
+        drag.active = true
+        suppressCardClick.current = true
+        setSelectedCard(null)
+        setDraggedCard(drag.card)
+      }
+      event.preventDefault()
+      const spot = spotAtPosition(event.clientX, event.clientY, drag.card, drag.offsetX, drag.offsetY)
+      setHover(spot)
+    }
+    const onPointerUp = (event: PointerEvent) => {
+      const drag = touchDrag.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+      if (drag.active) {
+        const spot = spotAtPosition(event.clientX, event.clientY, drag.card, drag.offsetX, drag.offsetY)
+        if (spot && canPick) pick(drag.card, spot.day, spot.slot)
+        clearDrag()
+        window.setTimeout(() => { suppressCardClick.current = false }, 0)
+      }
+      touchDrag.current = null
+    }
+    const onPointerCancel = (event: PointerEvent) => {
+      if (touchDrag.current?.pointerId !== event.pointerId) return
+      touchDrag.current = null
+      clearDrag()
+    }
+    const onVisibilityChange = () => {
+      if (document.hidden) clearDrag()
+    }
+    window.addEventListener('pointermove', onPointerMove, { passive: false })
+    window.addEventListener('pointerup', onPointerUp)
+    window.addEventListener('pointercancel', onPointerCancel)
+    window.addEventListener('blur', clearDrag)
+    window.addEventListener('dragend', clearDrag)
+    window.addEventListener('drop', clearDrag)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('blur', clearDrag)
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerCancel)
+      window.removeEventListener('dragend', clearDrag)
+      window.removeEventListener('drop', clearDrag)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [canPick, clearDrag, pick, spotAtPosition])
 
   useEffect(() => {
     if (state.weekComplete || isOver || state.error || noMoves || state.turn === 0) return
@@ -141,31 +199,65 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     setHover(spot)
   }
 
+  const onScheduleTap = (event: MouseEvent<HTMLDivElement>, day: number) => {
+    if (!canPick || !selectedCard) return
+    const rect = event.currentTarget.getBoundingClientRect()
+    const slot = Math.min(Math.max(Math.floor((event.clientY - rect.top) / (rect.height / 4)), 0),
+      selectedCard.orientation === 'horizontal' ? SLOTS : SLOTS - 1)
+    if (canPlace(state.schedules[0], day, slot, selectedCard)) pick(selectedCard, day, slot)
+  }
+
   const renderSchedule = (i: number) => {
     const bust = state.bustColumns[i]
-    const totals = scheduleTotals(state.schedules[i], state.starting[i], bust)
+    const totals = state.weekComplete
+      ? completedWeekTotals(state)[i]
+      : scheduleTotals(state.schedules[i], state.starting[i], bust)
     const targets = state.pendingFlip?.player === i && i === 0 ? flipTargets(state) : []
+    const placementCard = draggedCard ?? selectedCard
     return (
-      <section className={`zone schedule-zone${i === 0 ? ' your-schedule' : ''}`}>
-        <h2 className={i === state.turn && !state.weekComplete ? 'active' : ''}>
-          {i === 0 ? 'Your' : `Computer ${i}'s`} Schedule Area{' '}
-          <strong aria-live="polite">Points: {totals.points}</strong>
-        </h2>
-        {bust !== null && <p>Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
+      <section className={`zone schedule-zone${i === 0 ? ' your-schedule' : ''}${i === state.turn && !state.weekComplete ? ' active-player' : ''}`}>
+        <div className="schedule-heading">
+          <div className="schedule-title">
+            <h2 className={i === state.turn && !state.weekComplete ? 'active' : ''}>
+              {i === 0 ? 'Your' : `Computer ${i}'s`} Schedule
+            </h2>
+            {i === 0 && <strong className="carnival-points" aria-live="polite">Carnival points: {totals.points}</strong>}
+          </div>
+          {i !== 0 && <strong className="computer-carnival-points" aria-live="polite">Carnival points: {totals.points}</strong>}
+          {i === 0 && !isOver && (
+            <div className="schedule-tools">
+              <div className="week-badge"><span>Carnival Season</span><strong>Week {state.week} <small>of {WEEKS}</small></strong></div>
+              <button
+                className="primary-button start-next-week"
+                disabled={!state.weekComplete}
+                onClick={() => setState(startNextWeek)}
+              >
+                Start next week
+              </button>
+            </div>
+          )}
+          {i === 0 && !isOver && weekControls(bust)}
+        </div>
+        {i !== 0 && bust !== null && <p>Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
         <div className="player-row">
           <div className="card start-card">
             <CardFace top={`💰 ${state.starting[i].money}`} bottom={`⚡ ${state.starting[i].energy}`} />
           </div>
           <div
-            className="days"
+            className={`days${state.week === WEEKS ? ' final-week' : ''}`}
+            ref={i === 0 ? scheduleRef : undefined}
             onDragOver={i === 0 && canPick ? onDragOver : undefined}
             onDragLeave={i === 0 ? () => setHover(null) : undefined}
             onDrop={i === 0 ? onDrop : undefined}
           >
             {DAYS.map((day, d) => (
-              <div key={day} className={`day${bust !== null && d >= bust ? ' busted-day' : ''}`}>
-                <div className="day-label">{day}{bust !== null && d >= bust && <span className="sr-only"> (busted, values count as zero)</span>}</div>
-                <div className="day-inner">
+              <div key={day} className={`day${state.week === WEEKS && d === DAYS.length - 1 ? ' mardi-gras-day' : ''}${bust !== null && d >= bust ? ' busted-day' : ''}`}>
+                <div className="day-label">
+                  {day}
+                  {state.week === WEEKS && d === DAYS.length - 1 && <span className="mardi-gras-tag">Mardi Gras</span>}
+                  {bust !== null && d >= bust && <span className="sr-only"> (busted, values count as zero)</span>}
+                </div>
+                <div className="day-inner" onClick={(event) => i === 0 && onScheduleTap(event, d)}>
                   {state.schedules[i][d].map((card, slot) => {
                     if (!card) return null
                     const horizontal = card.orientation === 'horizontal'
@@ -186,7 +278,10 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
                         role={target ? 'button' : undefined}
                         tabIndex={target ? 0 : undefined}
                         aria-label={target ? `Flip ${DAYS[d]} ${horizontal ? `horizontal row ${row + 1}` : ['top', 'middle', 'bottom'][row]} card ${card.faceDown ? 'face up' : 'face down'}${description ? `; ${description}` : ''}` : partiallyBusted ? `Horizontal card: ${DAYS[d + 1]} section is busted and counts as zero${description ? `; ${description}` : ''}` : busted ? `Card in busted column, counts as zero${description ? `; ${description}` : ''}` : description}
-                        onClick={target ? () => setState((s) => flipCard(s, d, slot)) : undefined}
+                        onClick={target ? (event) => {
+                          event.stopPropagation()
+                          setState((s) => flipCard(s, d, slot))
+                        } : undefined}
                         onKeyDown={target ? (event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault()
@@ -198,11 +293,11 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
                       </div>
                     )
                   })}
-                  {i === 0 && !isOver && draggedCard && Array.from({ length: draggedCard.orientation === 'horizontal' ? 4 : SLOTS }, (_, slot) => slot).map((slot) =>
-                    canPlace(state.schedules[i], d, slot, draggedCard) && (
+                  {i === 0 && !isOver && placementCard && Array.from({ length: placementCard.orientation === 'horizontal' ? 4 : SLOTS }, (_, slot) => slot).map((slot) =>
+                    canPlace(state.schedules[i], d, slot, placementCard) && (
                       <div
                         key={`slot-${slot}`}
-                        className={`slot-zone${draggedCard.orientation === 'horizontal' ? ' horizontal-slot' : ''}${hover?.day === d && hover.slot === slot ? ' hover' : ''}`}
+                        className={`slot-zone${placementCard.orientation === 'horizontal' ? ' horizontal-slot' : ''}${hover?.day === d && hover.slot === slot ? ' hover' : ''}`}
                         style={{ '--slot': slot } as CSSProperties}
                       />
                     ),
@@ -234,6 +329,36 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
   )
   const blindSkipMessage = state.blindSkip &&
     `${state.blindSkip.player === 0 ? 'You drew' : `Computer ${state.blindSkip.player} drew`} ${state.blindSkip.card.top === 0 ? 'FLIP' : formatValue(state.blindSkip.card.top)} / ${state.blindSkip.card.bottom === 0 ? 'FLIP' : formatValue(state.blindSkip.card.bottom)} from the deck. There was no legal placement, so the card was set aside and the turn was skipped.`
+  const lastPlay = lastPlayStatus(state)
+  const weekControls = (bust: number | null) => (
+    <div className="week-controls schedule-controls">
+      {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
+      <p className={`status${state.extraTurns !== null ? ' status-final-turns' : ''}${lastPlay ? ' status-last-play' : ''}`} role="status">
+        <span className="status-sparkle" aria-hidden="true">✦</span>
+        <span>
+          {state.finalTurnOrder !== null && !state.error && !isOver && 'Final Mardi Gras turns! Players go in picked-card value order; the player who played into Tuesday sits out. '}
+          {state.finalTurnTrigger !== null && state.finalTurnOrder === null && !state.error && !isOver && 'Tuesday reached! Finish the current draw; then everyone else takes one final turn in picked-card value order. '}
+          {state.error
+            ? state.error
+            : isOver
+              ? 'Game over — all three weeks are complete.'
+              : state.weekComplete
+                ? `Week ${state.week} complete. Review the results before starting the next week.`
+                : state.pendingFlip
+                  ? state.turn === 0 ? `Choose a highlighted card for the ${state.schedules[0][state.pendingFlip.day][state.pendingFlip.slot]?.orientation === 'horizontal' ? state.pendingFlip.halves[0] === 'top' ? 'left' : 'right' : state.pendingFlip.halves[0]} FLIP.` : `Computer ${state.turn} is choosing a card to flip…`
+                : noMoves
+                  ? `${state.turn === 0 ? 'You have' : `Computer ${state.turn} has`} no eligible placement. Start a new game.`
+                  : state.turn === 0
+                    ? state.blindCard ? selectedCard ? 'Tap an open highlighted space to place your blind card.' : 'Your blind card is revealed: drag it or tap it, then tap an open highlighted space.' : selectedCard ? 'Tap an open highlighted space to place your selected card.' : 'Your turn: drag or tap a face-up card, or draw blind.'
+                    : `Computer ${state.turn} is picking…`}
+          {lastPlay === 'last' && ' Last play of the week!'}
+          {lastPlay === 'possible' && ' Some plays may end the week.'}
+          {state.extraTurns !== null && !state.error && !isOver && ` ${state.extraTurns} final ${state.extraTurns === 1 ? 'turn' : 'turns'} remaining.`}
+        </span>
+      </p>
+      {bust !== null && <p className="busted-message">Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
+    </div>
+  )
 
   if (isOver) {
     const totals = completedWeekTotals(state)
@@ -247,15 +372,15 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
           <h1 ref={gameOverHeading} tabIndex={-1}>Game over</h1>
           <p className="game-over-winner">{winners.length === 1 ? 'Winner' : 'Winners'}: {winners.join(', ')}</p>
           <p>Winning final score: {highestScore}</p>
-          <p>Final score = victory points − money − energy. Ties go to the most cards in Sunday.</p>
+          <p>Final score = carnival points − money − energy. Ties go to the most cards in Tuesday.</p>
         </header>
         {toolbar}
         {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
         <section className="final-boards" aria-labelledby="final-boards-heading">
           <h2 id="final-boards-heading">Final schedules</h2>
-          <p>Scores use carried-over points and resources after week 3 busts. Sunday counts include covered cards and cards in busted columns.</p>
+          <p>Scores use carried-over carnival points and resources after week 3 busts. Tuesday counts include covered cards and cards in busted columns.</p>
           {state.schedules.map((schedule, i) => <div key={i}>
-            <p className="final-score">{i === 0 ? 'Your' : `Computer ${i}'s`} final score: <strong>{finalScore(totals[i])}</strong> ({totals[i].points} points − {totals[i].money} money − {totals[i].energy} energy); Sunday cards: {sundayCardCount(schedule)}</p>
+            <p className="final-score">{i === 0 ? 'Your' : `Computer ${i}'s`} final score: <strong>{finalScore(totals[i])}</strong> ({totals[i].points} carnival points − {totals[i].money} money − {totals[i].energy} energy); Tuesday cards: {tuesdayCardCount(schedule)}</p>
             {renderSchedule(i)}
           </div>)}
         </section>
@@ -264,18 +389,47 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
   }
 
   const playableIds = new Set(legalMoves(state.schedules[state.turn], availableCards).map((move) => move.card.id))
-  const lastPlay = lastPlayStatus(state)
   const topCard = state.deck[0]
   const topBack = topCard ? backValues(topCard) : null
   const renderDrawCard = (card: Card, enabled: boolean) => (
     <div
-      className={`card${card.orientation === 'horizontal' ? ' horizontal-card' : ''}${card.top < 0 && card.bottom < 0 ? ' double-negative-card' : ''}${enabled ? ' pickable' : ''}`}
+      className={`card${card.orientation === 'horizontal' ? ' horizontal-card' : ''}${card.top < 0 && card.bottom < 0 ? ' double-negative-card' : ''}${enabled ? ' pickable' : ''}${selectedCard?.id === card.id ? ' selected-for-play' : ''}`}
       key={card.id}
       draggable={enabled}
+      role={enabled ? 'button' : undefined}
+      tabIndex={enabled ? 0 : undefined}
+      aria-pressed={enabled ? selectedCard?.id === card.id : undefined}
+      onClick={enabled ? () => {
+        if (suppressCardClick.current) {
+          suppressCardClick.current = false
+          return
+        }
+        setSelectedCard((selected) => selected?.id === card.id ? null : card)
+      } : undefined}
+      onPointerDown={enabled ? (event) => {
+        if (event.pointerType !== 'touch') return
+        const rect = event.currentTarget.getBoundingClientRect()
+        touchDrag.current = {
+          pointerId: event.pointerId,
+          card,
+          startX: event.clientX,
+          startY: event.clientY,
+          offsetX: event.clientX - rect.left,
+          offsetY: event.clientY - rect.top,
+          active: false,
+        }
+      } : undefined}
+      onKeyDown={enabled ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          setSelectedCard((selected) => selected?.id === card.id ? null : card)
+        }
+      } : undefined}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', String(card.id))
         const rect = e.currentTarget.getBoundingClientRect()
         grab.current = { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width }
+        setSelectedCard(null)
         setDraggedCard(card)
       }}
       onDragEnd={clearDrag}
@@ -288,11 +442,11 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
     <main className="game">
       <header className="game-header">
         <div>
-          <p className="eyebrow">✦ Make it to Mardi Gras ✦</p>
-          <h1>Let the good times roll.</h1>
+          <h1>Make it to Mardi Gras</h1>
+          <p className="game-subtitle">Let the good times roll.</p>
         </div>
-        <div className="week-badge"><span>The celebration</span><strong>Week {state.week} <small>of {WEEKS}</small></strong></div>
       </header>
+      <p className="rotate-notice">For a roomier table, rotate your phone sideways. You can also scroll the schedule and cards.</p>
       {toolbar}
 
       <div className="computer-schedules" aria-label="Computer schedules">
@@ -328,32 +482,6 @@ function Game({ numPlayers, difficulty, onExit }: Props) {
       </section>
 
       {renderSchedule(0)}
-      <div className="week-controls">
-        {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
-        <p className={`status${state.extraTurns !== null ? ' status-final-turns' : ''}${lastPlay ? ' status-last-play' : ''}`} role="status">
-          <span className="status-sparkle" aria-hidden="true">✦</span>
-          <span>
-            {state.extraTurns !== null && !state.error && !isOver && 'Final turns of the week! Each player gets one last turn. '}
-            {state.error
-              ? state.error
-              : isOver
-                ? 'Game over — all three weeks are complete.'
-                : state.weekComplete
-                  ? `Week ${state.week} complete. Review the results before starting the next week.`
-                  : state.pendingFlip
-                    ? state.turn === 0 ? `Choose a highlighted card for the ${state.schedules[0][state.pendingFlip.day][state.pendingFlip.slot]?.orientation === 'horizontal' ? state.pendingFlip.halves[0] === 'top' ? 'left' : 'right' : state.pendingFlip.halves[0]} FLIP.` : `Computer ${state.turn} is choosing a card to flip…`
-                  : noMoves
-                    ? `${state.turn === 0 ? 'You have' : `Computer ${state.turn} has`} no eligible placement. Start a new game.`
-                    : state.turn === 0
-                      ? state.blindCard ? 'Your blind card is revealed: drag it into your schedule.' : 'Your turn: choose a face-up card or draw blind from the deck.'
-                      : `Computer ${state.turn} is picking…`}
-            {lastPlay === 'last' && ' Last play of the week!'}
-            {lastPlay === 'possible' && ' Some plays may end the week.'}
-            {state.extraTurns !== null && !state.error && !isOver && ` ${state.extraTurns} final ${state.extraTurns === 1 ? 'turn' : 'turns'} remaining.`}
-          </span>
-        </p>
-        {state.weekComplete && !isOver && <button className="primary-button" onClick={() => setState(startNextWeek)}>Start next week</button>}
-      </div>
     </main>
   )
 }

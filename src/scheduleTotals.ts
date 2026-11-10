@@ -77,13 +77,28 @@ export function scheduleTotals(
   return totals
 }
 
-export function bustColumn(schedule: Schedule, starting: PlayerTotals): number | null {
+export function bustColumn(schedule: Schedule, starting: PlayerTotals, protectFinalColumn = false): number | null {
   const final = scheduleTotals(schedule, starting)
   if (final.money >= 0 && final.energy >= 0) return null
 
-  for (let day = 0; day < schedule.length; day++) {
+  const columnsToCheck = protectFinalColumn ? schedule.length - 1 : schedule.length
+  for (let day = 0; day < columnsToCheck; day++) {
     const totals = scheduleTotals(schedule, starting, day + 1)
     if (totals.money < 0 || totals.energy < 0) return day
   }
   return null
+}
+
+export function scheduleTotalsAfterBust(
+  schedule: Schedule,
+  starting: PlayerTotals,
+  protectFinalColumn = false,
+): PlayerTotals {
+  const bust = bustColumn(schedule, starting, protectFinalColumn)
+  const totals = scheduleTotals(schedule, starting, bust)
+  if (protectFinalColumn && bust === null) {
+    totals.money = Math.max(0, totals.money)
+    totals.energy = Math.max(0, totals.energy)
+  }
+  return totals
 }

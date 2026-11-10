@@ -27,13 +27,13 @@ function RulesButton() {
             <button type="submit" autoFocus>Close</button>
           </form>
         </div>
-        <p className="rules-intro">Build a seven-day schedule over three weeks. Earn victory points, manage your money and energy, and finish with the highest final score.</p>
+        <p className="rules-intro">Build a seven-day schedule over three weeks. Earn carnival points, manage your money and energy, and finish with the highest final score.</p>
 
         <section>
           <h3>1. Set up</h3>
           <ul>
             <li>Choose <strong>2–5 players</strong>. You are one player; the rest are computers.</li>
-            <li>Choose one difficulty for all computers: Easy makes random legal plays; Medium favors points and resources; Hard also considers busts, future moves, and when to end the week.</li>
+            <li>Choose one difficulty for all computers: Easy makes random legal plays; Medium favors carnival points and resources; Hard also considers busts, future moves, and when to end the week.</li>
             <li>Each player starts with <strong>5 money and 5 energy</strong>. The game lasts three weeks, with a separate shuffled deck each week.</li>
             <li>Card number values range from <strong>1–8 in week 1</strong>, <strong>2–9 in week 2</strong>, and <strong>3–10 in week 3</strong>. The range increases by 1 each week.</li>
             <li>Put <strong>one more card than the number of players</strong> face up in the draw area. For example, 3 players start with 4 cards.</li>
@@ -56,7 +56,7 @@ function RulesButton() {
 
         <section>
           <h3>3. Place cards in your schedule</h3>
-          <p>Your schedule has <strong>seven columns, Monday through Sunday</strong>. Vertical cards cover two sections in one column. Horizontal cards cover one section in each of two neighboring columns. New cards go on top of cards they overlap.</p>
+          <p>Your schedule has <strong>seven columns, Wednesday through Tuesday</strong>. Vertical cards cover two sections in one column. Horizontal cards cover one section in each of two neighboring columns. New cards go on top of cards they overlap.</p>
           <p>A horizontal card scores its left value in the left column and its right value in the next column. It must fit within the schedule. Its left section must connect to your schedule; its right section can connect to a card in the next column.</p>
           <h4>Adjacent placements</h4>
           <p>Every card must connect in its leftmost column. At least one section of the new card must do one of the following:</p>
@@ -64,7 +64,7 @@ function RulesButton() {
             <li>Overlap a section, or sit directly above or below one, in the same column.</li>
             <li>Sit in the same row as a section in the column immediately to the left.</li>
           </ul>
-          <p>Your starting values count as sections just left of Monday, in the two middle rows. So your first horizontal card must use one of those rows; any vertical position can touch a starting value. Diagonal sections and gaps do not connect.</p>
+          <p>Your starting values count as sections just left of Wednesday, in the two middle rows. So your first horizontal card must use one of those rows; any vertical position can touch a starting value. Diagonal sections and gaps do not connect.</p>
           <h4>Covering numbers</h4>
           <ul>
             <li>Cover a positive number with a negative number or FLIP.</li>
@@ -83,28 +83,29 @@ function RulesButton() {
           <h3>4. Count your schedule</h3>
           <p>Each column has four number sections. From top to bottom, they count as:</p>
           <ol className="rules-scoring">
-            <li><strong>Victory points</strong></li>
+            <li><strong>Carnival points</strong></li>
             <li><strong>Money</strong></li>
             <li><strong>Energy</strong></li>
-            <li><strong>Victory points</strong></li>
+            <li><strong>Carnival points</strong></li>
           </ol>
-          <p>Only visible values count; covered values do not. Add visible money and energy to your starting amounts. Your points appear beside your schedule; your running money and energy appear on the card at its right.</p>
+          <p>Only visible values count; covered values do not. Add visible money and energy to your starting amounts. Your carnival-point total appears beside your schedule; your running money and energy appear on the card at its right.</p>
         </section>
 
         <section>
           <h3>5. End the week</h3>
-          <p>A week ends when the deck cannot refill the draw area. There is one exception: if a player places a <strong>vertical card in Sunday</strong>, each player gets one final turn, starting with the next player and continuing clockwise. A horizontal card spanning Sunday does not trigger final turns. Keep this clockwise order even if the draw area refills. If the deck cannot fully refill it, use the cards that remain. The week ends after everyone takes a final turn.</p>
+          <p>A week ends when the deck cannot refill the draw area. There is one exception: if a player places a <strong>vertical card in Tuesday</strong>, that player ends their turns for the week. Finish the current draw so every player has a picked card, then each other player gets one final turn. Order those turns by the picked cards&apos; combined values, lowest first. Break ties with the usual lowest-single-value and clockwise rules; anyone who drew blind goes after players with a picked card. A horizontal card spanning Tuesday does not trigger final turns. If the deck cannot fully refill the draw area, use the cards that remain; if there are not enough for everyone&apos;s final turn, the game reports the shortage.</p>
           <h4>Check for a bust</h4>
           <p>After the week ends, check each player&apos;s final money and energy:</p>
           <ul>
             <li>If both are zero or higher, no columns are busted. This is true even if a resource was negative earlier.</li>
-            <li>If either is negative, start with your starting amounts and add each column from left to right. Find the first column where money or energy drops below zero. Gray out that column and every column after it; all their values, including points, count as zero. If a horizontal card crosses the bust line, its section before the line still counts. Busting does not turn cards over.</li>
+            <li>If either is negative, start with your starting amounts and add each column from left to right. Find the first column where money or energy drops below zero. Gray out that column and every column after it; all their values, including carnival points, count as zero. If a horizontal card crosses the bust line, its section before the line still counts. Busting does not turn cards over.</li>
+            <li>In week 3, you cannot bust on Mardi Gras Tuesday. If a resource first drops below zero in Tuesday, keep Tuesday&apos;s carnival points and count that resource as zero instead. Tuesday is not grayed out for a bust that starts there; a bust from an earlier day still grays it out.</li>
           </ul>
           <h4>Start the next week</h4>
-          <p>Carry each player&apos;s remaining points, money, and energy into the next week. The player with the fewest carried-over points starts weeks 2 and 3. If players tie, the first tied player clockwise from the previous week&apos;s starting player goes first.</p>
+          <p>Carry each player&apos;s remaining carnival points, money, and energy into the next week. The player with the fewest carried-over carnival points starts weeks 2 and 3. If players tie, the first tied player clockwise from the previous week&apos;s starting player goes first.</p>
           <p>The game ends after <strong>week 3</strong>. Calculate each final score:</p>
-          <p><strong>Final score = victory points − remaining money − remaining energy.</strong></p>
-          <p>The highest final score wins. If players tie, the one with the most cards occupying Sunday wins. Count every card that touches Sunday, including covered cards, horizontal cards, and cards in a busted column. If they are still tied, they share the win.</p>
+          <p><strong>Final score = carnival points − remaining money − remaining energy.</strong></p>
+          <p>The highest final score wins. If players tie, the one with the most cards occupying Tuesday wins. Count every card that touches Tuesday, including covered cards, horizontal cards, and cards in a busted column. If they are still tied, they share the win.</p>
         </section>
       </dialog>
     </>

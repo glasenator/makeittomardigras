@@ -1,5 +1,5 @@
-import { finalScore, flipCard, flipTargets, legalMoves, playCard, sundayCardCount, WEEKS, type GameState } from './gameLogic'
-import { bustColumn, scheduleTotals } from './scheduleTotals'
+import { finalScore, flipCard, flipTargets, legalMoves, playCard, tuesdayCardCount, WEEKS, type GameState } from './gameLogic'
+import { bustColumn, scheduleTotals, scheduleTotalsAfterBust } from './scheduleTotals'
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
 type Move = ReturnType<typeof legalMoves>[number]
@@ -21,10 +21,12 @@ export function chooseFlipTarget(state: GameState, difficulty: Difficulty, rando
   for (const target of targets) {
     const next = flipCard(state, target.day, target.slot)
     const schedule = next.schedules[player]
-    const cutoff = bustColumn(schedule, state.starting[player])
-    const totals = scheduleTotals(schedule, state.starting[player], cutoff)
+    const cutoff = bustColumn(schedule, state.starting[player], state.week === WEEKS)
+    const totals = state.week === WEEKS
+      ? scheduleTotalsAfterBust(schedule, state.starting[player], true)
+      : scheduleTotals(schedule, state.starting[player], cutoff)
     const score = state.week === WEEKS
-      ? finalScore(totals) * 4 + sundayCardCount(schedule) * 0.1
+      ? finalScore(totals) * 4 + tuesdayCardCount(schedule) * 0.1
       : totals.points * 4 + Math.min(totals.money, 10) * 0.4 + Math.min(totals.energy, 10) * 0.4
     if (score > best) { best = score; choices = [target] }
     else if (score === best) choices.push(target)
@@ -60,9 +62,8 @@ export function chooseComputerMove(state: GameState, difficulty: Difficulty, ran
     const starting = state.starting[player]
     const totals = scheduleTotals(schedule, starting)
     if (state.week === WEEKS) {
-      const cutoff = bustColumn(schedule, starting)
-      const safeTotals = scheduleTotals(schedule, starting, cutoff)
-      return finalScore(safeTotals) * 4 + sundayCardCount(schedule) * 0.1
+      const safeTotals = scheduleTotalsAfterBust(schedule, starting, true)
+      return finalScore(safeTotals) * 4 + tuesdayCardCount(schedule) * 0.1
     }
     const resourceScore = (value: number) => value < 0 ? value * 12 : Math.min(value, 10) * 0.4
     let score = totals.points * 4 + resourceScore(totals.money) + resourceScore(totals.energy)
@@ -98,12 +99,15 @@ export function chooseComputerMove(state: GameState, difficulty: Difficulty, ran
         score += Math.min(futureMoves.length, 20) * 0.2
       }
       if (state.extraTurns === null && move.day === schedule.length - 1 && move.card.orientation !== 'horizontal') {
-        const ownCutoff = bustColumn(schedule, state.starting[player])
-        const ownTotals = scheduleTotals(schedule, state.starting[player], ownCutoff)
+        const ownTotals = state.week === WEEKS
+          ? scheduleTotalsAfterBust(schedule, state.starting[player], true)
+          : scheduleTotals(schedule, state.starting[player], bustColumn(schedule, state.starting[player]))
         const ownPoints = state.week === WEEKS ? finalScore(ownTotals) : ownTotals.points
         const bestOpponent = Math.max(...state.schedules.map((other, i) =>
           i === player ? -Infinity : (() => {
-            const totals = scheduleTotals(other, state.starting[i], bustColumn(other, state.starting[i]))
+            const totals = state.week === WEEKS
+              ? scheduleTotalsAfterBust(other, state.starting[i], true)
+              : scheduleTotals(other, state.starting[i], bustColumn(other, state.starting[i]))
             return state.week === WEEKS ? finalScore(totals) : totals.points
           })(),
         ))

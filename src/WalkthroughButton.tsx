@@ -7,7 +7,7 @@ const steps: Step[] = [
     title: 'Welcome to the party!',
     content: (
       <>
-        <p>Build a Monday-to-Sunday schedule over three weeks. Earn victory points, manage your money and energy, and finish with the highest final score.</p>
+        <p>Build a Wednesday-to-Tuesday schedule over three weeks. Earn carnival points, manage your money and energy, and finish with the highest final score.</p>
         <div className="walkthrough-example">
           <strong>Getting started</strong>
           <p>Choose 2–5 players and a computer difficulty. Each player starts with 5 money and 5 energy. You start week 1. Card values range from 1–8 in week 1, 2–9 in week 2, and 3–10 in week 3: the range moves up by 1 each week.</p>
@@ -39,12 +39,12 @@ const steps: Step[] = [
     title: 'Build your schedule',
     content: (
       <>
-        <p>Your schedule has seven columns, Monday through Sunday. A vertical card covers two adjacent sections in one column. A horizontal card covers one section in each of two neighboring columns.</p>
+        <p>Your schedule has seven columns, Wednesday through Tuesday. A vertical card covers two adjacent sections in one column. A horizontal card covers one section in each of two neighboring columns.</p>
         <div className="walkthrough-example">
-          <strong>Example: opening Tuesday</strong>
-          <p>A card in Monday&apos;s middle row lets you connect a new card in any row of Tuesday. Each new card must overlap or touch a card in its leftmost column, or touch a card in the same row of the previous column.</p>
+          <strong>Example: opening Thursday</strong>
+          <p>A card in Wednesday&apos;s middle row lets you connect a new card in any row of Thursday. Each new card must overlap or touch a card in its leftmost column, or touch a card in the same row of the previous column.</p>
         </div>
-        <p>Your starting values count as sections just left of Monday, in its two middle rows. So your first horizontal card must use one of those rows; any vertical position can connect to a starting value. Gaps and diagonal sections do not connect.</p>
+        <p>Your starting values count as sections just left of Wednesday, in its two middle rows. So your first horizontal card must use one of those rows; any vertical position can connect to a starting value. Gaps and diagonal sections do not connect.</p>
       </>
     ),
   },
@@ -78,16 +78,16 @@ const steps: Step[] = [
     title: 'See what counts',
     content: (
       <>
-        <p>Each column has four sections. From top to bottom, they count as <strong>points, money, energy, and points</strong>. Only visible values count; a blank card back counts as zero.</p>
+        <p>Each column has four sections. From top to bottom, they count as <strong>carnival points, money, energy, and carnival points</strong>. Only visible values count; a blank card back counts as zero.</p>
         <div className="walkthrough-example">
           <strong>Example: one column</strong>
           <ul className="walkthrough-score-example">
-            <li>Top: +2 points</li>
+            <li>Top: +2 carnival points</li>
             <li>Second: -1 money</li>
             <li>Third: +3 energy</li>
-            <li>Bottom: +4 points</li>
+            <li>Bottom: +4 carnival points</li>
           </ul>
-          <p>Starting from 5 money and 5 energy, the result is <strong>6 points, 4 money, and 8 energy</strong>. Covered values do not count.</p>
+          <p>Starting from 5 money and 5 energy, the result is <strong>6 carnival points, 4 money, and 8 energy</strong>. Covered values do not count.</p>
         </div>
       </>
     ),
@@ -101,7 +101,7 @@ const steps: Step[] = [
           <strong>Example: a tie</strong>
           <p>Both cards total 1. The first card wins the tie because its lowest value, -3, is lower than -2.</p>
         </div>
-        <p>If still tied, the first tied player clockwise from the previous starting player goes first. If everyone drew blind, the next player clockwise goes first. During final turns, play stays clockwise.</p>
+        <p>If still tied, the first tied player clockwise from the previous starting player goes first. If everyone drew blind, the next player clockwise goes first. Final Mardi Gras turns use the picked-card order described in the next step.</p>
       </>
     ),
   },
@@ -109,10 +109,10 @@ const steps: Step[] = [
     title: 'The week wraps up',
     content: (
       <>
-        <p>The week ends when the deck cannot refill the draw area. Placing a vertical card in Sunday starts the <strong>final turns</strong>. A horizontal card spanning Sunday does not.</p>
+        <p>The week ends when the deck cannot refill the draw area. A vertical card in Tuesday starts the <strong>final turns</strong>. The player who places it is done for the week. Finish the current draw, then the other players each take one final turn in order of their picked card&apos;s combined value, lowest first. Use the usual tie-breakers; players who drew blind go after players with a picked card. A horizontal card spanning Tuesday does not start final turns.</p>
         <div className="walkthrough-example">
-          <strong>Example: reaching Sunday</strong>
-          <p>After your vertical Sunday placement, the next player goes first. Everyone, including you, gets one more turn. Continue clockwise, even if the draw area refills.</p>
+          <strong>Example: reaching Tuesday</strong>
+          <p>After your vertical Tuesday placement, you sit out. Finish the current draw, then the other players take one final turn each. The player whose picked card has the lowest combined value goes first.</p>
         </div>
         <p>If the deck cannot fully refill the draw area, use any cards that remain. The week ends after everyone takes one final turn.</p>
       </>
@@ -125,9 +125,9 @@ const steps: Step[] = [
         <p>At the end of the week, check your final money and energy. If either is negative, find the first column where a running total falls below zero.</p>
         <div className="walkthrough-example">
           <strong>Example: money runs short</strong>
-          <p>You start with 5 money. Monday adds -2, leaving 3. Tuesday adds -4, bringing the total to -1. If your final money or energy is negative, gray out Tuesday and every later column. Those columns count as zero, including their points. Keep the 3 money you had before Tuesday.</p>
+          <p>You start with 5 money. Wednesday adds -2, leaving 3. Thursday adds -4, bringing the total to -1. If your final money or energy is negative, gray out Thursday and every later column. Those columns count as zero, including their carnival points. Keep the 3 money you had before Thursday.</p>
         </div>
-        <p>If a horizontal card crosses the bust line, its section before the line still counts; its section in the busted column does not. Busting does not turn cards over. If both final resources are zero or higher, no columns are busted, even if a resource was negative earlier.</p>
+        <p>If a horizontal card crosses the bust line, its section before the line still counts; its section in the busted column does not. Busting does not turn cards over. In week 3, you cannot bust on Mardi Gras Tuesday: if a resource first goes below zero there, keep Tuesday&apos;s carnival points and count that resource as zero. Tuesday is not grayed out unless a bust started earlier. If both final resources are zero or higher, no columns are busted, even if a resource was negative earlier.</p>
       </>
     ),
   },
@@ -135,12 +135,12 @@ const steps: Step[] = [
     title: 'Ready for the next week!',
     content: (
       <>
-        <p>After the bust check, carry each player&apos;s remaining points, money, and energy into the next week. In weeks 2 and 3, the player with the fewest carried-over points starts. Break ties clockwise from the previous week&apos;s starting player.</p>
+        <p>After the bust check, carry each player&apos;s remaining carnival points, money, and energy into the next week. In weeks 2 and 3, the player with the fewest carried-over carnival points starts. Break ties clockwise from the previous week&apos;s starting player.</p>
         <div className="walkthrough-example">
           <strong>Example: starting week 2</strong>
-          <p>If you have 8 points and a computer has 5, the computer starts because it has fewer carried-over points.</p>
+          <p>If you have 8 carnival points and a computer has 5, the computer starts because it has fewer carried-over carnival points.</p>
         </div>
-        <p>After week 3, calculate <strong>victory points − remaining money − remaining energy</strong>. For example, 18 points, 6 money, and 4 energy gives a final score of 8. The highest score wins. If tied, the player with the most cards occupying Sunday wins. Count covered cards, horizontal cards, and cards in a busted column. If still tied, share the win.</p>
+        <p>After week 3, calculate <strong>carnival points − remaining money − remaining energy</strong>. For example, 18 carnival points, 6 money, and 4 energy gives a final score of 8. The highest score wins. If tied, the player with the most cards occupying Tuesday wins. Count covered cards, horizontal cards, and cards in a busted column. If still tied, share the win.</p>
       </>
     ),
   },
