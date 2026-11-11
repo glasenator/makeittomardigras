@@ -21,7 +21,30 @@ body::before {
   height: 8px;
   background: repeating-linear-gradient(90deg, #8b37bd 0 28px, #f4c744 28px 34px, #13815d 34px 62px, #f4c744 62px 68px);
 }
-#root { min-height: calc(100svh - 7px); }
+#root { position: relative; isolation: isolate; min-height: calc(100svh - 8px); }
+@property --vortex-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: -4deg;
+}
+#root::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 0 10%, #11101433 48%, #111014dd 100%),
+    repeating-conic-gradient(from var(--vortex-angle) at center, #a64de02e 0deg 14deg, #f4c74414 14deg 21deg, #18a87929 21deg 37deg, #11101400 37deg 50deg);
+  animation: mardi-vortex-drift 32s ease-in-out infinite alternate;
+}
+@keyframes mardi-vortex-drift {
+  from { --vortex-angle: -4deg; }
+  to { --vortex-angle: 4deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #root::before { animation: none; }
+}
 button { font: inherit; }
 button:focus-visible { outline: 3px solid #d59816; outline-offset: 3px; }
 p { margin: 0; }

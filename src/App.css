@@ -15,7 +15,7 @@ button {
 button:hover { background: #f5e9d1; border-color: #b48b36; }
 .eyebrow { color: #8c6616; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.19em; text-transform: uppercase; }
 
-.start { max-width: none; min-height: calc(100svh - 7px); display: grid; place-items: center; padding: 3rem 1rem; text-align: center; background: radial-gradient(circle at 15% 16%, #f5deaa 0 2px, transparent 3px), radial-gradient(circle at 84% 21%, #dcbb70 0 3px, transparent 4px), radial-gradient(circle at 21% 76%, #a48ab0 0 3px, transparent 4px), radial-gradient(circle at 77% 80%, #8ab19a 0 3px, transparent 4px), linear-gradient(145deg, #f8f0df, #fffaf0 50%, #f1e7d6); }
+.start { max-width: none; min-height: calc(100svh - 8px); display: grid; place-items: center; padding: 3rem 1rem; text-align: center; background: radial-gradient(circle at 15% 16%, #f5deaa 0 2px, transparent 3px), radial-gradient(circle at 84% 21%, #dcbb70 0 3px, transparent 4px), radial-gradient(circle at 21% 76%, #a48ab0 0 3px, transparent 4px), radial-gradient(circle at 77% 80%, #8ab19a 0 3px, transparent 4px), linear-gradient(145deg, #f8f0df, #fffaf0 50%, #f1e7d6); }
 .start-hero { width: min(100%, 620px); }
 .hero-ornament { color: var(--gold); font-size: 1.1rem; letter-spacing: 0.5rem; }
 .hero-ornament span { display: inline-grid; place-items: center; width: 68px; height: 68px; margin: 0 0.5rem 1rem; border: 2px solid #dbc079; border-radius: 50%; color: var(--purple); background: #fff9e9; font-size: 2.5rem; letter-spacing: 0; }
@@ -451,7 +451,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
     radial-gradient(circle at 85% 22%, #19a87966 0 3px, transparent 4px),
     radial-gradient(circle at 16% 78%, #a64de066 0 3px, transparent 4px),
     radial-gradient(circle at 81% 76%, #f4c74455 0 2px, transparent 3px),
-    linear-gradient(145deg, #17131b, #101916 55%, #1d1421);
+  linear-gradient(145deg, #17131bcc, #101916bb 55%, #1d1421cc);
 }
 
 .hero-ornament { color: var(--gold); text-shadow: 0 0 18px #f4c74480; }
