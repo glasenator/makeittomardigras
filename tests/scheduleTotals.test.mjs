@@ -82,6 +82,23 @@ test('week-three Mardi Gras Tuesday prevents a bust on that column and floors ne
   assert.deepEqual(scheduleTotalsAfterBust(schedule, starting, true), { money: 5, energy: 5, points: 10 })
 })
 
+test('final Tuesday totals use only visible sections of overlapping vertical and horizontal cards', () => {
+  const schedule = Array.from({ length: 7 }, () => [null, null, null])
+  schedule[5].push({ id: 1, top: -1, bottom: 99, orientation: 'horizontal', row: 0, placedAt: 1, sequence: 1 })
+  schedule[6][0] = { id: 2, top: 3, bottom: -99, placedAt: 1, sequence: 2 }
+  schedule[6][1] = { id: 3, top: 2, bottom: -99, placedAt: 2, sequence: 3 }
+  schedule[6][2] = { id: 4, top: 5, bottom: 4, placedAt: 3, sequence: 4 }
+  const starting = { money: 5, energy: 5, points: 10 }
+  const expected = { money: 7, energy: 10, points: 16 }
+
+  assert.deepEqual(scheduleTotals(schedule, starting), expected)
+  assert.deepEqual(scheduleTotalsAfterBust(schedule, starting, true), expected)
+  assert.equal(bustColumn(schedule, starting, true), null)
+
+  schedule[6][1] = { ...schedule[6][1], top: -9 }
+  assert.deepEqual(scheduleTotalsAfterBust(schedule, starting, true), { money: 0, energy: 10, points: 16 })
+})
+
 test('bust calculation uses visible overlap values and carried starting resources', () => {
   const schedule = [[
     { id: 1, top: 4, bottom: -9, placedAt: 1 },

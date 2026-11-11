@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import RulesButton from './RulesButton'
 import WalkthroughButton from './WalkthroughButton'
+import NeonTitle from './NeonTitle'
 import type { Difficulty } from './computerPlayer'
 
 export const MIN_PLAYERS = 2
@@ -54,9 +55,7 @@ function StartScreen({ onStart }: Props) {
       <div className="start-hero">
         <div className="hero-ornament" aria-hidden="true">✦ <span>⚜</span> ✦</div>
         <p className="eyebrow">Alpha Version</p>
-        <h1>Make it to <em><span className="sr-only">Mardi Gras</span><span className="neon-title" aria-hidden="true">{Array.from('Mardi Gras').map((character, index) => (
-          <span className={`neon-letter neon-letter-${index % 3}${flickeringLetters.includes(index) ? ' flickering-off' : ''}`} key={`${character}-${index}`}>{character === ' ' ? '\u00a0' : character}</span>
-        ))}</span></em></h1>
+        <h1>Make it to <NeonTitle flickeringLetters={flickeringLetters} /></h1>
         <p className="hero-copy">Plan your schedule, conserve energy, spend money,<br></br> and let the good times roll.</p>
         <div className="bead-divider" aria-hidden="true"><span>✦</span></div>
         <section className="setup-card" aria-labelledby="setup-heading">
@@ -86,8 +85,8 @@ function StartScreen({ onStart }: Props) {
           </div>
           <div className="start-actions">
             <button className="primary-button" onClick={() => onStart(players, difficulty)}>Start game <span aria-hidden="true">✦</span></button>
-            <RulesButton />
             <WalkthroughButton />
+            <RulesButton />
           </div>
         </section>
         <p className="start-footer"><a href="https://www.glaserbeamgames.com" target="_blank" rel="noreferrer">GLASERBEAM GAMES</a></p>

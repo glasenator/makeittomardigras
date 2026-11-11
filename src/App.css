@@ -15,7 +15,7 @@ button {
 button:hover { background: #f5e9d1; border-color: #b48b36; }
 .eyebrow { color: #8c6616; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.19em; text-transform: uppercase; }
 
-.start { max-width: none; min-height: calc(100svh - 8px); display: grid; place-items: center; padding: 3rem 1rem; text-align: center; background: radial-gradient(circle at 15% 16%, #f5deaa 0 2px, transparent 3px), radial-gradient(circle at 84% 21%, #dcbb70 0 3px, transparent 4px), radial-gradient(circle at 21% 76%, #a48ab0 0 3px, transparent 4px), radial-gradient(circle at 77% 80%, #8ab19a 0 3px, transparent 4px), linear-gradient(145deg, #f8f0df, #fffaf0 50%, #f1e7d6); }
+.start { max-width: none; min-height: calc(100svh - var(--top-stripe-height)); display: grid; place-items: center; padding: 3rem 1rem; text-align: center; background: radial-gradient(circle at 15% 16%, #f5deaa 0 2px, transparent 3px), radial-gradient(circle at 84% 21%, #dcbb70 0 3px, transparent 4px), radial-gradient(circle at 21% 76%, #a48ab0 0 3px, transparent 4px), radial-gradient(circle at 77% 80%, #8ab19a 0 3px, transparent 4px), linear-gradient(145deg, #f8f0df, #fffaf0 50%, #f1e7d6); }
 .start-hero { width: min(100%, 620px); }
 .hero-ornament { color: var(--gold); font-size: 1.1rem; letter-spacing: 0.5rem; }
 .hero-ornament span { display: inline-grid; place-items: center; width: 68px; height: 68px; margin: 0 0.5rem 1rem; border: 2px solid #dbc079; border-radius: 50%; color: var(--purple); background: #fff9e9; font-size: 2.5rem; letter-spacing: 0; }
@@ -51,32 +51,37 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .week-badge small { color: #7b6a78; font: 700 0.75rem "Trebuchet MS", sans-serif; }
 .toolbar { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
 .difficulty-badge { align-self: center; color: #6f5c69; font-size: 0.8rem; font-weight: 800; text-transform: capitalize; }
+.computer-section-difficulty { display: none; }
 .game-over { max-width: 1200px; }
+.game-over-navigation { display: contents; }
+.game-over-navigation > .game-header { display: none; }
 .game-over-header { margin-bottom: 1.25rem; padding: 1.5rem; border: 1px solid #ddc78d; border-radius: 16px; background: #fff8df; text-align: center; }
 .game-over-header h1 { margin: 0.4rem 0; color: var(--deep-purple); font: 800 clamp(2rem, 5vw, 3rem) Georgia, serif; }
 .game-over-header > p:last-child { color: #765720; font-weight: 800; }
 .game-over-winner { margin: 0.5rem 0; color: var(--green); font: 700 1.4rem Georgia, serif; }
 .final-boards > h2 { margin: 1.25rem 0 0.4rem; color: var(--purple); font: 700 1.5rem Georgia, serif; }
 .final-boards > p { margin-bottom: 1rem; color: #6f5c69; }
-.final-score { margin: 0 0 0.5rem; color: #50335e; font-weight: 700; }
+.final-boards .player-row > :first-child { margin-left: auto; }
+.final-boards .player-row > :last-child { margin-right: auto; }
 .schedule-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .schedule-heading h2 { margin-bottom: 0.8rem; }
 .schedule-heading .week-badge { min-width: 125px; padding: 0.4rem 0.7rem; }
 .schedule-title h2 { margin: 0 0 0.25rem; }
 .carnival-points { display: inline-flex; align-items: center; min-height: 36px; padding: 0.3rem 0.55rem; border: 1px solid #c9aed5; border-radius: 8px; background: #efe3f4; color: var(--deep-purple); font-size: 0.85rem; }
+.carnival-points-icon { display: none; }
 .status { display: flex; align-items: center; gap: 0.7rem; margin: 0 0 1.2rem; padding: 0.8rem 1rem; border: 1px solid #cfe0d4; border-radius: 10px; background: #e8f4eb; color: #205d45; font-size: 0.9rem; font-weight: 800; }
 .status-sparkle { color: #a57a17; font-size: 1.1rem; }
+.status-warning-line { display: block; }
 .week-controls { max-width: 900px; margin: 0 auto 1.25rem; }
 .week-controls .status { margin-bottom: 0.75rem; }
 .schedule-controls { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; width: auto; max-width: 24rem; margin: 0; }
 .schedule-controls .status { justify-content: center; width: auto; max-width: 100%; margin: 0; padding: 0.5rem 0.7rem; text-align: center; }
 .schedule-controls .blind-notice { margin: 0; text-align: center; }
-.schedule-controls .busted-message { margin: 0; color: #9c3d35; font-weight: 700; text-align: center; }
 .your-schedule .schedule-heading { display: grid; grid-template-columns: minmax(max-content, 1fr) minmax(0, 999fr) minmax(max-content, 1fr); align-items: stretch; gap: 0.75rem; }
 .your-schedule .schedule-title { grid-column: 1; width: 100%; max-width: 100%; }
 .your-schedule .schedule-title { display: flex; flex-direction: column; align-items: flex-start; }
 .your-schedule .schedule-title h2 { margin-bottom: 0; font-size: 1.25rem; }
-.your-schedule .schedule-title .carnival-points { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 0; padding: 0.25rem 0.4rem; }
+.your-schedule .schedule-title .carnival-points { width: fit-content; max-width: 100%; flex-direction: row; justify-content: flex-start; gap: 0.5rem; align-items: center; margin-top: 0; padding: 0.25rem 0.4rem; }
 .your-schedule .carnival-points-score { font-size: 1.4em; line-height: 1; }
 .your-schedule .schedule-controls { grid-column: 2; grid-row: 1; justify-self: stretch; align-self: start; width: 100%; max-width: none; margin-top: -4px; }
 .your-schedule .schedule-controls .status { width: fit-content; max-width: 100%; padding: 0.4rem 0.6rem; }
@@ -93,8 +98,9 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 @media (prefers-reduced-motion: reduce) {
   .start-next-week:not(:disabled) { animation: none; }
 }
-.status-final-turns, .status-last-play { background: #fce8e7; color: #952e2b; border-color: #db9993; }
-.status-final-turns .status-sparkle, .status-last-play .status-sparkle { color: #a72c2c; }
+
+.status-final-turns, .status-last-play { background: #fff3c8; color: #674b11; border-color: #d5a82f; }
+.status-final-turns .status-sparkle, .status-last-play .status-sparkle { color: #9c6c00; }
 .status-last-play { animation: last-play-wiggle 0.5s ease-in-out infinite; }
 @keyframes last-play-wiggle {
   0%, 100% { transform: translateX(0); }
@@ -118,6 +124,9 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .game > .your-schedule { max-width: 1150px; margin-inline: auto; }
 .game > .play-area { max-width: 1150px; margin-inline: auto; }
 .computer-schedules { display: flex; gap: 0.65rem; overflow-x: auto; padding-bottom: 0.25rem; }
+.computer-schedules.fade-left { mask-image: linear-gradient(to right, transparent, #000 1.5rem); }
+.computer-schedules.fade-right { mask-image: linear-gradient(to left, transparent, #000 1.5rem); }
+.computer-schedules.fade-left.fade-right { mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent); }
 .computer-schedule { --card-w: 50px; --card-h: calc(var(--card-w) * 2); --day-padding: 0.12rem; flex: 0 0 max-content; }
 .computer-schedule:first-child { margin-left: auto; }
 .computer-schedule:last-child { margin-right: auto; }
@@ -125,7 +134,9 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .computer-schedule .schedule-zone h2 { margin: 0; font-size: 0.8rem; }
 .computer-carnival-points { align-self: flex-start; margin-left: auto; padding: 0.2rem 0.4rem; border: 1px solid #c9aed5; border-radius: 7px; background: #efe3f4; color: var(--deep-purple); font-size: 0.72rem; white-space: nowrap; }
 .computer-schedule .schedule-heading { align-items: flex-start; gap: 0.35rem; }
-.computer-schedule .player-row { display: grid; grid-template-columns: repeat(2, max-content); justify-content: space-between; gap: 0.45rem; overflow: visible; }
+.computer-schedule-toggle { display: none; }
+.computer-schedule .player-row { display: grid; grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr); align-items: center; gap: 0.45rem; overflow: visible; }
+.computer-schedule .computer-carnival-points { grid-column: 2; grid-row: 1; align-self: center; margin: 0; }
 .computer-schedule .days { grid-row: 2; grid-column: 1 / -1; }
 .computer-schedule .day { border-radius: 6px; }
 .computer-schedule .day-label { padding-bottom: 0.2rem; font-size: 0.55rem; letter-spacing: 0.02em; }
@@ -271,7 +282,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .computer-schedule .schedule-zone { width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; }
   .computer-schedule .schedule-heading { min-width: 0; }
   .computer-schedule .computer-carnival-points { padding: 0.15rem 0.25rem; font-size: 0.62rem; }
-  .computer-schedule .player-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; max-width: 100%; overflow: hidden; }
+  .computer-schedule .player-row { display: grid; grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr); min-width: 0; max-width: 100%; overflow: hidden; }
   .computer-schedule .days { grid-column: 1 / -1; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; overflow-x: auto; }
   .game-header { align-items: center; }
   .game-header { margin-bottom: 0.5rem; }
@@ -316,47 +327,73 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .setup-card { padding: 1.5rem 1rem; }
 }
 
-@media (min-width: 951px) {
-  .your-schedule .schedule-title .carnival-points {
-    flex: 1;
-    justify-content: space-between;
-    padding: 0.25rem 0.4rem;
-    font-size: 1rem;
-  }
-}
-
 @media (max-width: 700px) and (orientation: portrait) {
   .rotate-notice { padding: 0.4rem 0.6rem; border: 1px solid #ddc78d; border-radius: 8px; background: #fff8df; }
+}
+
+@media (max-width: 600px), (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+  .carnival-points, .computer-carnival-points { position: relative; }
+  .carnival-points-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .carnival-points-icon { display: block; flex: 0 0 auto; width: 1.15rem; height: 0.75rem; fill: #d78cff; }
+  .computer-carnival-points { display: inline-flex; align-items: center; gap: 0.25rem; }
 }
 
 @media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
   .game {
     --card-w: clamp(40px, 10vh, 54px);
     display: grid;
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-columns: minmax(0, clamp(calc(var(--card-w) * 3 + 3.5rem), 31.5%, calc(var(--card-w) * 5 + 3.5rem))) minmax(0, 1fr);
     gap: 0.4rem;
     padding: 0.35rem 0.5rem;
   }
-  .game-header, .game > .toolbar, .computer-schedules { grid-column: 1 / -1; }
-  .game-header { margin: 0; }
-  .game-header h1 { font-size: 1.5rem; }
-  .game-subtitle { margin-top: 0.1rem; font-size: 0.75rem; }
-  .game > .toolbar { gap: 0.3rem; margin: 0; }
+  .game > .game-header { grid-column: 1; grid-row: 1; justify-content: flex-start; min-width: 0; margin: 0; text-align: left; }
+  .game-header h1 { font-size: clamp(1rem, 2.8vw, 1.5rem); }
+  .game-subtitle { display: none; }
+  .game:not(.game-over) > .toolbar { grid-column: 1; grid-row: 2; align-content: start; justify-content: flex-start; gap: 0.3rem; min-width: 0; margin: 0; }
+  .game:not(.game-over) > .toolbar .difficulty-badge { display: none; }
+  .game > .computer-section-difficulty { display: block; grid-column: 2; grid-row: 1; justify-self: end; align-self: center; }
+  .game.game-over { align-items: start; }
+  .game.game-over > .game-over-header { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; padding: 0.4rem 0.6rem; }
+  .game-over-navigation { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+  .game-over-navigation > .game-header { display: flex; justify-content: flex-start; min-width: 0; margin: 0; text-align: left; }
+  .game-over-navigation > .toolbar { align-content: start; justify-content: flex-start; gap: 0.3rem; min-width: 0; margin: 0; }
+  .game-over-navigation > .toolbar button { padding: 0.3rem 0.5rem; font-size: 0.72rem; }
+  .game-over-navigation > .toolbar .difficulty-badge { display: none; }
+  .game-over-header h1 { margin: 0.1rem 0; font-size: 1.4rem; }
+  .game-over-header .game-over-winner { margin: 0.15rem 0; font-size: 0.95rem; }
+  .game-over-header > p:not(.game-over-winner) { font-size: 0.65rem; }
+  .game.game-over > .blind-notice, .game.game-over > .final-boards { grid-column: 1 / -1; min-width: 0; }
+  .game.game-over > .blind-notice { margin: 0; padding: 0.4rem; font-size: 0.7rem; }
+  .game-over .final-boards > h2 { margin: 0.3rem 0; font-size: 1rem; }
+  .game-over .final-boards > p { margin-bottom: 0.4rem; font-size: 0.7rem; }
+  .game-over .final-boards .schedule-zone { margin-bottom: 0.5rem; padding: 0.45rem; }
+  .game-over .final-boards .player-row { max-width: 100%; }
+  .game-over .final-boards .card { padding: 0.2rem; }
+  .game-over .final-boards .card-face { font-size: 0.75rem; }
+  .game-over .final-boards .start-card .card-face span, .game-over .final-boards .total-card .card-face span { font-size: 0.58rem; }
   .game > .toolbar button { padding: 0.3rem 0.5rem; font-size: 0.72rem; }
-  .game > .computer-schedules { max-height: 142px; gap: 0.4rem; }
+  .game > .computer-schedules { grid-column: 2; grid-row: 2; align-self: start; min-width: 0; max-width: 100%; max-height: none; gap: 0.4rem; }
   .computer-schedule { --card-w: 38px; --card-h: calc(var(--card-w) * 2); }
-  .computer-schedule .schedule-zone { padding: 0.35rem; }
+  .computer-schedule .schedule-zone { height: auto; margin-bottom: 0; padding: 0.35rem; }
   .computer-schedule .schedule-zone h2 { margin-bottom: 0.3rem; font-size: 0.67rem; }
+  .computer-schedule .computer-schedule-toggle { display: block; flex: 0 0 auto; padding: 0.2rem 0.35rem; font-size: 0.58rem; }
+  .computer-schedule:not(.expanded) .days { display: none; }
+  .computer-schedule.expanded .days { display: grid; }
   .computer-schedule .player-row { gap: 0.25rem; }
   .computer-schedule .day-label { font-size: 0.45rem; }
-  .game > .play-area { grid-column: 1; align-self: start; gap: 0.4rem; margin: 0; padding: 0.45rem; }
+  .game > .play-area { grid-column: 1; grid-row: 3; align-self: stretch; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0.45rem; }
   .play-area h2 { margin-bottom: 0.3rem; font-size: 0.7rem; }
-  .draw-area { flex: 1 1 0; width: 0; }
-  .cards { flex-wrap: nowrap; gap: 0.25rem; min-height: 0; overflow-x: auto; padding: 0.25rem; }
+  .draw-area { display: flex; flex: 1 1 0; flex-direction: column; align-self: stretch; width: 0; }
+  .cards { flex: 1 1 0; flex-wrap: wrap; align-content: flex-start; gap: 0.25rem; min-height: 0; overflow: auto; padding: 0.25rem; }
   .cards .card { padding: 0.2rem; }
+  .game > .play-area .card-face, .game > .your-schedule .card-face, .game > .drag-preview .card-face { font-size: 0.75rem; }
+  .game > .play-area .card, .game > .your-schedule .card, .game .drag-preview { padding: 0.2rem; }
+  .game .card .flip-value { font-size: 0.4rem; }
+  .game .card .flip-arrows { font-size: 0.5rem; }
+  .game > .your-schedule .start-card .card-face span, .game > .your-schedule .total-card .card-face span { font-size: 0.58rem; }
   .blind-draw-button { margin-top: 0.25rem; padding: 0.25rem; font-size: 0.62rem; }
-  .blind-reveal { flex-basis: var(--card-w); }
-  .game > .your-schedule { grid-column: 2; align-self: start; max-width: none; margin: 0; padding: 0.45rem; }
+  .blind-reveal { flex-basis: 100%; }
+  .game > .your-schedule { grid-column: 2; grid-row: 3; align-self: stretch; max-width: none; margin: 0; padding: 0.45rem; }
   .schedule-heading { align-items: center; gap: 0.25rem; }
   .your-schedule .schedule-heading { grid-template-columns: minmax(max-content, 1fr) minmax(0, 999fr) minmax(max-content, 1fr); gap: 0.25rem; }
   .your-schedule .schedule-title { width: 100%; max-width: 100%; }
@@ -372,6 +409,8 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .schedule-controls .status { padding: 0.3rem; font-size: 0.58rem; }
   .your-schedule .schedule-tools .start-next-week { min-height: 27px; padding: 0.25rem 0.3rem; font-size: 0.58rem; }
   .player-row { gap: 0.25rem; }
+  .your-schedule .player-row > :first-child { margin-left: auto; }
+  .your-schedule .player-row > :last-child { margin-right: auto; }
   .days { --day-padding: 0.12rem; --day-gap: 0.12rem; }
   .day { border-radius: 5px; }
   .day-label { padding-bottom: 0.12rem; font-size: 0.48rem; letter-spacing: 0.02em; }
@@ -381,6 +420,20 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .schedule-controls { gap: 0.25rem; margin-bottom: 0.4rem; }
   .week-controls .status { margin-bottom: 0.35rem; }
   .rotate-notice { display: none; }
+}
+
+.your-schedule .schedule-title .carnival-points {
+  min-height: 0;
+  gap: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.your-schedule .schedule-title .carnival-points-score { font-size: 1em; line-height: normal; }
+@media (max-width: 600px) {
+  .your-schedule .schedule-title .carnival-points { padding: 0.15rem 0.25rem; font-size: 0.62rem; }
 }
 
 @media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
@@ -417,6 +470,11 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .player-options { margin-block: 0.7rem 0.5rem; }
   .start-actions { margin-top: 0.8rem; }
   .start-footer { margin-top: 0.8rem; }
+}
+
+@media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+  .start h1 { font-size: clamp(1.4rem, 4vw, 2.4rem); }
+  .start .neon-title { white-space: nowrap; }
 }
 
 /* Retro carnival table theme */
@@ -470,6 +528,9 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
   animation: marquee-neon-glow 5s ease-in-out infinite;
   text-shadow: 0 0 5px #fff1bd, 0 0 14px #f4c74466, 0 0 28px #c968ff55;
 }
+.game-header h1 { text-shadow: 0 0 5px #fff1bd, 0 0 14px #f4c74466, 0 0 28px #c968ff55; }
+.game-header .neon-letter { animation: none; }
+.game-header .neon-title { white-space: nowrap; }
 .start h1 em { color: #d78cff; }
 .neon-title { display: inline-block; }
 .neon-letter {
@@ -578,6 +639,34 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
 .your-schedule .schedule-title h2.active { color: #71e0b6; }
 
 .computer-schedule .schedule-zone { border-color: #45554a; }
+.computer-schedule .schedule-zone.computer-week-threat {
+  border-color: #f4c744;
+  box-shadow: 0 0 0 2px #f4c74455, 0 4px 0 #0b090d, inset 4px 0 #f4c744, 0 0 20px #f4c74433;
+}
+.schedule-zone.player-busted {
+  border-color: #f17b6e;
+  box-shadow: 0 0 0 2px #f17b6e55, 0 4px 0 #0b090d, inset 4px 0 #f17b6e, 0 0 20px #f17b6e33;
+}
+@media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+  .schedule-zone.computer-busted, .computer-schedule .schedule-zone.computer-busted {
+    position: relative;
+    border-color: #f17b6e;
+    box-shadow: 0 0 0 2px #f17b6e55, 0 4px 0 #0b090d, inset 4px 0 #f17b6e, 0 0 20px #f17b6e33;
+  }
+  .schedule-zone > .computer-busted-message {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
 .computer-schedule .schedule-heading h2 { color: #e8dcae; }
 .player-row { scrollbar-color: #77518a #1b171e; }
 .day {
@@ -670,10 +759,10 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
 }
 .status-sparkle { color: #f4cf4c; text-shadow: 0 0 10px #f4cf4c88; }
 .status-final-turns, .status-last-play {
-  border-color: #f17b6e;
-  background: linear-gradient(100deg, #4a202a, #311b29);
-  box-shadow: inset 0 1px #ffffff12, 0 2px 0 #100a0e, 0 0 14px #eb615533;
-  color: #ffe0cf;
+  border-color: #f4c744;
+  background: linear-gradient(100deg, #5c4517, #392d17);
+  box-shadow: inset 0 1px #ffffff12, 0 2px 0 #100a0e, 0 0 14px #f4c74455;
+  color: #fff1bd;
 }
 .status-final-turns .status-sparkle, .status-last-play .status-sparkle { color: #ffd05a; }
 .blind-notice {
@@ -682,7 +771,14 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
   background: #3a2e18;
   color: #ffe6a1;
 }
-.schedule-zone > p, .schedule-controls .busted-message { color: #ff9a83; }
+.status.status-busted {
+  border-color: #f17b6e;
+  background: linear-gradient(100deg, #4a202a, #311b29);
+  color: #ffe0cf;
+  box-shadow: inset 0 1px #ffffff12, 0 2px 0 #100a0e, 0 0 14px #eb615533;
+}
+.status.status-busted .status-sparkle { color: #ff9a83; }
+.schedule-zone > p { color: #ff9a83; }
 .rotate-notice {
   border-color: #9f7a30;
   background: #302719;
@@ -713,8 +809,31 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
 .game-over-header { border-color: #e1ba48; }
 .game-over-header > p:last-child { color: #f1d98c; }
 .game-over-winner { color: #6de0b3; }
+.game-over-winner.computer-winner { color: #ff9a83; }
 .final-boards > h2 { color: #f3cf64; }
-.final-boards > p, .final-score { color: #e4d7e8; }
+.final-boards > p { color: #e4d7e8; }
+.final-boards .schedule-title { min-width: 0; }
+.final-boards .schedule-title h2 { margin-bottom: 0.35rem; }
+.final-calculation { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.final-boards .final-calculation .final-score-value {
+  display: inline-flex; align-items: center; gap: 0.3rem; min-height: 0;
+  padding: 0.25rem 0.45rem; border: 1px solid #9e4dc1; border-radius: 7px;
+  background: linear-gradient(145deg, #452052, #2d193c); color: #f0cbff; font-size: 0.85rem;
+}
+.final-calculation .carnival-points-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+.final-calculation .carnival-points-icon { display: block; width: 1.15rem; height: 0.75rem; fill: #d78cff; }
+.final-boards .final-calculation .final-score-money { border-color: #268d69; background: linear-gradient(145deg, #1d533f, #163629); color: #d8ffe7; }
+.final-boards .final-calculation .final-score-energy { border-color: #a88435; background: linear-gradient(145deg, #594218, #392d17); color: #fff1c1; }
+.final-score-operator { color: #e8c86b; font-size: 1.2rem; font-weight: 900; }
+.final-score-result { color: #ffe28a; font-size: 1.6rem; line-height: 1; }
+.final-tuesday-count { display: inline-block; margin-top: 0.3rem; color: #d8c4de; font-size: 0.75rem; font-weight: 700; }
+@media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+  .final-calculation { gap: 0.25rem; }
+  .final-boards .final-calculation .final-score-value { padding: 0.15rem 0.3rem; font-size: 0.7rem; }
+  .final-score-operator { font-size: 0.9rem; }
+  .final-score-result { font-size: 1.25rem; }
+  .final-tuesday-count { font-size: 0.65rem; }
+}
 
 @media (max-width: 600px) {
   .setup-card { border-radius: 9px; }

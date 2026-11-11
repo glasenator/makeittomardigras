@@ -10,7 +10,7 @@ const result = await build({
   format: 'esm',
   platform: 'node',
 })
-const { canPlace, completedWeekTotals, drawBlind, finalScore, lastPlayStatus, legalMoves, newGame: createGame, playCard, startNextWeek, tuesdayCardCount, winningPlayers } = await import(
+const { canPlace, completedWeekTotals, computersAbleToReachTuesday, drawBlind, finalScore, lastPlayStatus, legalMoves, newGame: createGame, playCard, startNextWeek, tuesdayCardCount, winningPlayers } = await import(
   `data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`
 )
 const { visibleSections } = await import(
@@ -464,6 +464,28 @@ test('last-play status accounts for final turns, deck shortage, and seventh-colu
   assert.equal(lastPlayStatus(state), 'possible')
 })
 
+test('computer Tuesday threats use legal vertical placements and stop once final turns begin', () => {
+  const state = newGame(4, deck(20))
+  const nearTuesday = state.schedules[1].map((column, day) => day === 5
+    ? [{ id: -10, top: 1, bottom: 1, placedAt: 1 }, ...column.slice(1)]
+    : column)
+  const schedules = [state.schedules[0], nearTuesday, nearTuesday, state.schedules[3]]
+  const threatened = { ...state, schedules }
+
+  assert.deepEqual(computersAbleToReachTuesday(state), [])
+  assert.deepEqual(computersAbleToReachTuesday(threatened), [1, 2])
+  assert.deepEqual(computersAbleToReachTuesday({ ...threatened, finalTurnTrigger: 0 }), [])
+  assert.deepEqual(computersAbleToReachTuesday({ ...threatened, extraTurns: 1 }), [])
+  assert.deepEqual(computersAbleToReachTuesday({ ...threatened, weekComplete: true }), [])
+  assert.deepEqual(computersAbleToReachTuesday({ ...threatened, error: 'error' }), [])
+
+  const horizontal = { id: 100, top: 1, bottom: -1, orientation: 'horizontal' }
+  const vertical = { id: 101, top: 1, bottom: -1 }
+  assert.deepEqual(computersAbleToReachTuesday({ ...threatened, deck: [], drawArea: [horizontal] }), [])
+  assert.deepEqual(computersAbleToReachTuesday({ ...threatened, deck: [], drawArea: [vertical] }), [1, 2])
+  assert.deepEqual(computersAbleToReachTuesday({ ...threatened, deck: [], drawArea: [horizontal], blindCard: vertical, turn: 1 }), [1])
+})
+
 test('blind draws are revealed, must be placed, and cannot start the next draw', () => {
   const cards = deck(12)
   let state = newGame(2, cards)
@@ -647,6 +669,22 @@ test('negative resources first reached on final Tuesday count as zero without gr
   assert.equal(state.gameOver, true)
   assert.deepEqual(state.bustColumns, [null, null])
   assert.deepEqual(completedWeekTotals(state)[0], { money: 0, energy: 7, points: 16 })
+})
+
+test('final score uses visible Tuesday sections, not covered cards', () => {
+  const state = newGame(2, deck(4))
+  state.week = 3
+  state.weekComplete = true
+  state.gameOver = true
+  state.starting[0] = { money: 5, energy: 5, points: 10 }
+  state.schedules[0][5].push({ id: 101, top: -1, bottom: 99, orientation: 'horizontal', row: 0, placedAt: 1, sequence: 1 })
+  state.schedules[0][6][0] = { id: 102, top: 3, bottom: -99, placedAt: 1, sequence: 2 }
+  state.schedules[0][6][1] = { id: 103, top: 2, bottom: -99, placedAt: 2, sequence: 3 }
+  state.schedules[0][6][2] = { id: 104, top: 5, bottom: 4, placedAt: 3, sequence: 4 }
+
+  assert.deepEqual(completedWeekTotals(state)[0], { money: 7, energy: 10, points: 16 })
+  assert.equal(finalScore(completedWeekTotals(state)[0]), -1)
+  assert.equal(tuesdayCardCount(state.schedules[0]), 4)
 })
 
 test('final scores subtract money and energy, including negative final scores', () => {

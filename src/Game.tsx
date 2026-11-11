@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { makeDecks, type Card, type WeekDecks } from './deck'
-import { canPlace, completedWeekTotals, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, tuesdayCardCount, WEEKS, winningPlayers } from './gameLogic'
+import { canPlace, completedWeekTotals, computersAbleToReachTuesday, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, tuesdayCardCount, WEEKS, winningPlayers } from './gameLogic'
 import { activeValues, backValues, scheduleTotals } from './scheduleTotals'
 import { formatValue } from './formatValue'
 import cardDealUrl from './assets/carddeal.m4a'
@@ -10,6 +10,8 @@ import flipUrl from './assets/flip.m4a'
 import bustUrl from './assets/bust.m4a'
 import RulesButton from './RulesButton'
 import WalkthroughButton from './WalkthroughButton'
+import NeonTitle from './NeonTitle'
+import ComputerSchedules from './ComputerSchedules'
 import { chooseBlindDraw, chooseComputerMove, chooseFlipTarget, type Difficulty } from './computerPlayer'
 
 function CardNumber({ value, position }: { value: number; position: 'top' | 'bottom' | 'left' | 'right' }) {
@@ -41,6 +43,17 @@ function CardFace({ top, bottom, horizontal = false }: { top: ReactNode; bottom:
   )
 }
 
+function CarnivalPointsLabel({ multiline = false }: { multiline?: boolean }) {
+  return (
+    <>
+      <span className="carnival-points-label">Carnival{multiline ? <br /> : ' '}points:</span>
+      <svg className="carnival-points-icon" viewBox="0 0 32 20" aria-hidden="true" focusable="false">
+        <path fillRule="evenodd" d="M1 3C5 2 9 2 13 5l3 2 3-2c4-3 8-3 12-2-1 6-4 12-9 13-3 .5-5-1-6-3-1 2-3 3.5-6 3C5 15 2 9 1 3Zm4 4c1 3 3 5 7 4-1-2-4-4-7-4Zm22 0c-3 0-6 2-7 4 4 1 6-1 7-4Z" />
+      </svg>
+    </>
+  )
+}
+
 type Props = { numPlayers: number; difficulty: Difficulty; onExit: () => void; audioEnabled: boolean }
 
 function shuffledDecks(): WeekDecks {
@@ -66,6 +79,7 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
   const [dragPreview, setDragPreview] = useState<{ card: Card; left: number; top: number; rotation: number; tiltX: number; tiltY: number; scale: number } | null>(null)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [hover, setHover] = useState<{ day: number; slot: number } | null>(null)
+  const [expandedComputerSchedules, setExpandedComputerSchedules] = useState<Set<number>>(() => new Set())
 
   useEffect(() => {
     const previous = previousDealState.current
@@ -325,6 +339,11 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
     if (canPlace(state.schedules[0], day, slot, selectedCard)) pick(selectedCard, day, slot, true)
   }
 
+  const lastPlay = lastPlayStatus(state)
+  const computersNearTuesday = computersAbleToReachTuesday(state)
+  const computersAtRisk = new Set(computersNearTuesday)
+  if (state.turn > 0 && lastPlay) computersAtRisk.add(state.turn)
+
   const renderSchedule = (i: number) => {
     const bust = state.bustColumns[i]
     const totals = state.weekComplete
@@ -333,20 +352,50 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
     const targets = state.pendingFlip?.player === i && i === 0 ? flipTargets(state) : []
     const placementCard = draggedCard ?? selectedCard
     return (
-      <section className={`zone schedule-zone${i === 0 ? ' your-schedule' : ''}${i === state.turn && !state.weekComplete ? ' active-player' : ''}`}>
+      <section className={`zone schedule-zone${i === 0 ? ' your-schedule' : ''}${i === state.turn && !state.weekComplete ? ' active-player' : ''}${computersAtRisk.has(i) ? ' computer-week-threat' : ''}${bust !== null ? i === 0 ? ' player-busted' : ' computer-busted' : ''}`}>
         <div className="schedule-heading">
           <div className="schedule-title">
             <h2 className={i === state.turn && !state.weekComplete ? 'active' : ''}>
               {i === 0 ? 'Your' : `Computer ${i}'s`} Schedule
             </h2>
-            {i === 0 && (
+            {computersAtRisk.has(i) && <span className="sr-only">May end the week.</span>}
+            {isOver ? (
+              <>
+                <span className="sr-only">Final score: {totals.points} carnival points minus {totals.money} money minus {totals.energy} energy equals {finalScore(totals)}. Fat Tuesday cards: {tuesdayCardCount(state.schedules[i])}.</span>
+                <div className="final-calculation" aria-hidden="true">
+                  <span className="carnival-points final-score-value"><CarnivalPointsLabel /><strong>{totals.points}</strong></span>
+                  <span className="final-score-operator">−</span>
+                  <span className="final-score-value final-score-money"><span>💰</span><strong>{totals.money}</strong></span>
+                  <span className="final-score-operator">−</span>
+                  <span className="final-score-value final-score-energy"><span>⚡</span><strong>{totals.energy}</strong></span>
+                  <span className="final-score-operator">=</span>
+                  <strong className="final-score-result">{finalScore(totals)}</strong>
+                </div>
+                <span className="final-tuesday-count" aria-hidden="true">Fat Tuesday cards: {tuesdayCardCount(state.schedules[i])}</span>
+              </>
+            ) : i === 0 && (
               <div className="carnival-points" aria-live="polite">
-                <span>Carnival<br />points:</span>
+                <CarnivalPointsLabel />{' '}
                 <strong className="carnival-points-score">{totals.points}</strong>
               </div>
             )}
           </div>
-          {i !== 0 && <strong className="computer-carnival-points" aria-live="polite">Carnival points: {totals.points}</strong>}
+          {i !== 0 && (
+            <button
+              type="button"
+              className="computer-schedule-toggle"
+              aria-expanded={expandedComputerSchedules.has(i)}
+              aria-controls={`computer-schedule-days-${i}`}
+              onClick={() => setExpandedComputerSchedules((expanded) => {
+                const next = new Set(expanded)
+                if (next.has(i)) next.delete(i)
+                else next.add(i)
+                return next
+              })}
+            >
+              {expandedComputerSchedules.has(i) ? 'Hide schedule' : 'Show schedule'}
+            </button>
+          )}
           {i === 0 && !isOver && (
             <div className="schedule-tools">
               <div className="week-badge"><span>Carnival Season</span><strong>Week {state.week} <small>of {WEEKS}</small></strong></div>
@@ -359,15 +408,17 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
               </button>
             </div>
           )}
-          {i === 0 && !isOver && weekControls(bust)}
+          {i === 0 && (!isOver || bust !== null) && weekControls(bust)}
         </div>
-        {i !== 0 && bust !== null && <p>Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
+        {i !== 0 && bust !== null && <p className="computer-busted-message">Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
         <div className="player-row">
           <div className="card start-card">
             <CardFace top={`💰 ${state.starting[i].money}`} bottom={`⚡ ${state.starting[i].energy}`} />
           </div>
+          {i !== 0 && !isOver && <strong className="computer-carnival-points" aria-live="polite"><CarnivalPointsLabel />{' '}{totals.points}</strong>}
           <div
             className={`days${state.week === WEEKS ? ' final-week' : ''}`}
+            id={i !== 0 ? `computer-schedule-days-${i}` : undefined}
             ref={i === 0 ? scheduleRef : undefined}
           >
             {DAYS.map((day, d) => (
@@ -442,22 +493,29 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
     )
   }
 
+  const gameHeader = (
+    <header className="game-header">
+      <div>
+        <h1>Make it to <NeonTitle /></h1>
+        <p className="game-subtitle">Let the good times roll.</p>
+      </div>
+    </header>
+  )
   const toolbar = (
     <div className="toolbar">
       <button onClick={() => { clearDrag(); setState(newGame(numPlayers, shuffledDecks())) }}>New game</button>
       <button onClick={onExit}>Back to start</button>
-      <RulesButton />
       <WalkthroughButton />
-      <span className="difficulty-badge">Computer: {difficulty}</span>
+      <RulesButton />
+      <span className="difficulty-badge">Difficulty: {difficulty}</span>
     </div>
   )
   const blindSkipMessage = state.blindSkip &&
     `${state.blindSkip.player === 0 ? 'You drew' : `Computer ${state.blindSkip.player} drew`} ${state.blindSkip.card.top === 0 ? 'FLIP' : formatValue(state.blindSkip.card.top)} / ${state.blindSkip.card.bottom === 0 ? 'FLIP' : formatValue(state.blindSkip.card.bottom)} from the deck. There was no legal placement, so the card was set aside and the turn was skipped.`
-  const lastPlay = lastPlayStatus(state)
   const weekControls = (bust: number | null) => (
     <div className="week-controls schedule-controls">
       {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
-      <p className={`status${state.extraTurns !== null ? ' status-final-turns' : ''}${lastPlay ? ' status-last-play' : ''}`} role="status">
+      <p className={`status${state.extraTurns !== null ? ' status-final-turns' : ''}${lastPlay || computersNearTuesday.length > 0 ? ' status-last-play' : ''}${bust !== null ? ' status-busted' : ''}`} role="status">
         <span className="status-sparkle" aria-hidden="true">✦</span>
         <span>
           {state.finalTurnOrder !== null && !state.error && !isOver && 'Final Mardi Gras turns! Players go in picked-card value order; the player who played into Tuesday sits out. '}
@@ -476,35 +534,38 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
                     ? state.blindCard ? selectedCard ? 'Tap an open highlighted space to place your blind card.' : 'Your blind card is revealed: drag it or tap it, then tap an open highlighted space.' : selectedCard ? 'Tap an open highlighted space to place your selected card.' : 'Your turn: drag or tap a face-up card, or draw blind.'
                     : `Computer ${state.turn} is picking…`}
           {lastPlay === 'last' && ' Last play of the week!'}
-          {lastPlay === 'possible' && ' Some plays may end the week.'}
+          {lastPlay === 'possible' && <span className="status-warning-line">Some plays may end the week.</span>}
+          {computersNearTuesday.length > 0 && ` ${computersNearTuesday.map((player) => `Computer ${player}`).join(', ')} may reach Tuesday on a future turn.`}
           {state.extraTurns !== null && !state.error && !isOver && ` ${state.extraTurns} final ${state.extraTurns === 1 ? 'turn' : 'turns'} remaining.`}
+          {bust !== null && <span className="status-warning-line">Busted on {DAYS[bust]}; values in this column and later columns count as zero.</span>}
         </span>
       </p>
-      {bust !== null && <p className="busted-message">Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
     </div>
   )
 
   if (isOver) {
     const totals = completedWeekTotals(state)
     const highestScore = Math.max(...totals.map(finalScore))
-    const winners = winningPlayers(state).map((i) => i === 0 ? 'You' : `Computer ${i}`)
+    const winnerIndices = winningPlayers(state)
+    const winners = winnerIndices.map((i) => i === 0 ? 'You' : `Computer ${i}`)
 
     return (
       <main className="game game-over">
         <header className="game-over-header">
-          <p className="eyebrow">✦ Make it to Mardi Gras ✦</p>
           <h1 ref={gameOverHeading} tabIndex={-1}>Game over</h1>
-          <p className="game-over-winner">{winners.length === 1 ? 'Winner' : 'Winners'}: {winners.join(', ')}</p>
+          <p className={`game-over-winner${winnerIndices.includes(0) ? '' : ' computer-winner'}`}>{winners.length === 1 ? 'Winner' : 'Winners'}: {winners.join(', ')}</p>
           <p>Winning final score: {highestScore}</p>
-          <p>Final score = carnival points − money − energy. Ties go to the most cards in Tuesday.</p>
+          <p>Final score = carnival points − money − energy. Ties go to the most cards in Fat Tuesday.</p>
         </header>
-        {toolbar}
+        <div className="game-over-navigation">
+          {gameHeader}
+          {toolbar}
+        </div>
         {blindSkipMessage && <p className="blind-notice" role="status">{blindSkipMessage}</p>}
         <section className="final-boards" aria-labelledby="final-boards-heading">
           <h2 id="final-boards-heading">Final schedules</h2>
-          <p>Scores use carried-over carnival points and resources after week 3 busts. Tuesday counts include covered cards and cards in busted columns.</p>
-          {state.schedules.map((schedule, i) => <div key={i}>
-            <p className="final-score">{i === 0 ? 'Your' : `Computer ${i}'s`} final score: <strong>{finalScore(totals[i])}</strong> ({totals[i].points} carnival points − {totals[i].money} money − {totals[i].energy} energy); Tuesday cards: {tuesdayCardCount(schedule)}</p>
+          <p>Final scores use only visible card values after week 3 busts, plus carried-over points and resources. The Fat Tuesday card count is a separate tiebreaker and includes covered cards and cards in busted columns.</p>
+          {state.schedules.map((_, i) => <div key={i}>
             {renderSchedule(i)}
           </div>)}
         </section>
@@ -564,20 +625,16 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
 
   return (
     <main className="game">
-      <header className="game-header">
-        <div>
-          <h1>Make it to Mardi Gras</h1>
-          <p className="game-subtitle">Let the good times roll.</p>
-        </div>
-      </header>
+      {gameHeader}
       <p className="rotate-notice">For a roomier table, rotate your phone sideways. You can also scroll the schedule and cards.</p>
       {toolbar}
 
-      <div className="computer-schedules" aria-label="Computer schedules">
+      <span className="difficulty-badge computer-section-difficulty">Difficulty: {difficulty}</span>
+      <ComputerSchedules>
         {state.schedules.slice(1).map((_, k) => (
-          <div className="computer-schedule" key={k + 1}>{renderSchedule(k + 1)}</div>
+          <div className={`computer-schedule${expandedComputerSchedules.has(k + 1) ? ' expanded' : ''}`} key={k + 1}>{renderSchedule(k + 1)}</div>
         ))}
-      </div>
+      </ComputerSchedules>
 
       <section className="zone play-area">
         <div className="deck-pile">

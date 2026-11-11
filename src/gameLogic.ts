@@ -1,4 +1,4 @@
-import type { Card, WeekDecks } from './deck'
+import { makeDecks, type Card, type WeekDecks } from './deck'
 import { activeValues, bustColumn, entryCells, scheduleEntries, scheduleTotals, scheduleTotalsAfterBust, STARTING_VALUES, visibleGrid, type PlayerTotals, type Schedule, type ScheduledCard } from './scheduleTotals'
 
 export const DAYS = ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue']
@@ -416,4 +416,17 @@ export function lastPlayStatus(state: GameState): 'last' | 'possible' | null {
     state.deck.length - 1 < state.schedules.length + 1 - state.drawArea.length
   if (endingMoves === 0) return blindMayEnd || startsFinalTurns ? 'possible' : null
   return endingMoves === moves.length && (state.blindCard || state.deck.length === 0 || state.extraTurns === 1) ? 'last' : 'possible'
+}
+
+export function computersAbleToReachTuesday(state: GameState): number[] {
+  if (state.weekComplete || state.gameOver || state.error || state.finalTurnTrigger !== null ||
+      state.finalTurnOrder !== null || state.extraTurns !== null) return []
+
+  const potentialCards = state.deck.length > 0 ? makeDecks()[state.week - 1] : state.drawArea
+  return state.schedules.flatMap((schedule, player) =>
+    player > 0 && (state.blindCard && state.turn === player ? [state.blindCard] : potentialCards).some((card) =>
+      card.orientation !== 'horizontal' &&
+      Array.from({ length: SLOTS }, (_, slot) => slot).some((slot) => canPlace(schedule, DAYS.length - 1, slot, card)),
+    ) ? [player] : [],
+  )
 }
