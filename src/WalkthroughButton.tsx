@@ -7,10 +7,10 @@ const steps: Step[] = [
     title: 'Welcome to the party!',
     content: (
       <>
-        <p>Build a Wednesday-to-Tuesday schedule over three weeks. Earn carnival points, manage your money and energy, and finish with the highest final score.</p>
+        <p>Build a Wednesday-to-Tuesday schedule over three weeks. Earn <span aria-hidden="true">🎭</span> carnival points, manage your <span aria-hidden="true">💰</span> money and <span aria-hidden="true">⚡</span> energy, and finish with the highest final score.</p>
         <div className="walkthrough-example">
           <strong>Getting started</strong>
-          <p>Choose 2–5 players and a computer difficulty. Each player starts with 5 money and 5 energy. You start week 1. Card values range from 1–8 in week 1, 2–9 in week 2, and 3–10 in week 3: the range moves up by 1 each week.</p>
+          <p>Choose 2–5 players and a computer difficulty. Each player starts with <span aria-hidden="true">💰</span> 5 money and <span aria-hidden="true">⚡</span> 5 energy. A starting player is chosen at random for week 1. Card values range from 1–8 in week 1, 2–9 in week 2, and 3–10 in week 3: the range moves up by 1 each week.</p>
         </div>
         <p>This walkthrough uses examples only; it won&apos;t place cards in your game.</p>
       </>
@@ -78,16 +78,16 @@ const steps: Step[] = [
     title: 'See what counts',
     content: (
       <>
-        <p>Each column has four sections. From top to bottom, they count as <strong>carnival points, money, energy, and carnival points</strong>. Only visible values count; a blank card back counts as zero.</p>
+        <p>Each column has four sections. From top to bottom, they count as <strong><span aria-hidden="true">🎭</span> carnival points, <span aria-hidden="true">💰</span> money, <span aria-hidden="true">⚡</span> energy, and <span aria-hidden="true">🎭</span> carnival points</strong>. Only visible values count; a blank card back counts as zero.</p>
         <div className="walkthrough-example">
           <strong>Example: one column</strong>
           <ul className="walkthrough-score-example">
-            <li>Top: +2 carnival points</li>
-            <li>Second: -1 money</li>
-            <li>Third: +3 energy</li>
-            <li>Bottom: +4 carnival points</li>
+            <li>Top: <span aria-hidden="true">🎭</span> +2 carnival points</li>
+            <li>Second: <span aria-hidden="true">💰</span> -1 money</li>
+            <li>Third: <span aria-hidden="true">⚡</span> +3 energy</li>
+            <li>Bottom: <span aria-hidden="true">🎭</span> +4 carnival points</li>
           </ul>
-          <p>Starting from 5 money and 5 energy, the result is <strong>6 carnival points, 4 money, and 8 energy</strong>. Covered values do not count.</p>
+          <p>Starting from <span aria-hidden="true">💰</span> 5 money and <span aria-hidden="true">⚡</span> 5 energy, the result is <strong><span aria-hidden="true">🎭</span> 6 carnival points, <span aria-hidden="true">💰</span> 4 money, and <span aria-hidden="true">⚡</span> 8 energy</strong>. Covered values do not count.</p>
         </div>
       </>
     ),
@@ -122,7 +122,7 @@ const steps: Step[] = [
     title: 'Check for a bust',
     content: (
       <>
-        <p>At the end of the week, check your final money and energy. If either is negative, find the first column where a running total falls below zero.</p>
+        <p>At the end of the week, check your final <span aria-hidden="true">💰</span> money and <span aria-hidden="true">⚡</span> energy. If either is negative, find the first column where a running total falls below zero.</p>
         <div className="walkthrough-example">
           <strong>Example: money runs short</strong>
           <p>You start with 5 money. Wednesday adds -2, leaving 3. Thursday adds -4, bringing the total to -1. If your final money or energy is negative, gray out Thursday and every later column. Those columns count as zero, including their carnival points. Keep the 3 money you had before Thursday.</p>
@@ -135,12 +135,12 @@ const steps: Step[] = [
     title: 'Ready for the next week!',
     content: (
       <>
-        <p>After the bust check, carry each player&apos;s remaining carnival points, money, and energy into the next week. In weeks 2 and 3, the player with the fewest carried-over carnival points starts. Break ties clockwise from the previous week&apos;s starting player.</p>
+        <p>After the bust check, carry each player&apos;s remaining <span aria-hidden="true">🎭</span> carnival points, <span aria-hidden="true">💰</span> money, and <span aria-hidden="true">⚡</span> energy into the next week. In weeks 2 and 3, the player with the fewest carried-over carnival points starts. Break ties clockwise from the previous week&apos;s starting player.</p>
         <div className="walkthrough-example">
           <strong>Example: starting week 2</strong>
           <p>If you have 8 carnival points and a computer has 5, the computer starts because it has fewer carried-over carnival points.</p>
         </div>
-        <p>After week 3, calculate <strong>carnival points − remaining money − remaining energy</strong>. For example, 18 carnival points, 6 money, and 4 energy gives a final score of 8. The highest score wins. If tied, the player with the most cards occupying Tuesday wins. Count covered cards, horizontal cards, and cards in a busted column. If still tied, share the win.</p>
+        <p>After week 3, calculate <strong><span aria-hidden="true">🎭</span> carnival points − <span aria-hidden="true">💰</span> remaining money − <span aria-hidden="true">⚡</span> remaining energy</strong>. For example, <span aria-hidden="true">🎭</span> 18 carnival points, <span aria-hidden="true">💰</span> 6 money, and <span aria-hidden="true">⚡</span> 4 energy gives a final score of 8. The highest score wins. If tied, the player with the most cards occupying Tuesday wins. Count covered cards, horizontal cards, and cards in a busted column. If still tied, share the win.</p>
       </>
     ),
   },

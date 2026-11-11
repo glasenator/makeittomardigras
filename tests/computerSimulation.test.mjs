@@ -40,7 +40,7 @@ test('hard wins at least 60 of 100 seeded games against medium', () => {
     const decks = makeDecks().map((deck) => shuffled(deck, deckRandom))
     const randoms = [randomGenerator(seed * 19 + 1), randomGenerator(seed * 19 + 2)]
     const hard = seed % 2
-    let state = newGame(2, decks)
+    let state = newGame(2, decks, randomGenerator(Math.imul(seed, 2654435761)))
     for (let turn = 0; turn < 500 && !state.gameOver && !state.error; turn++) {
       if (state.weekComplete) {
         state = startNextWeek(state)

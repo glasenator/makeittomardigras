@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { makeDecks, type Card, type WeekDecks } from './deck'
 import { canPlace, completedWeekTotals, computersAbleToReachTuesday, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, tuesdayCardCount, WEEKS, winningPlayers } from './gameLogic'
 import { activeValues, backValues, scheduleTotals } from './scheduleTotals'
@@ -43,18 +43,24 @@ function CardFace({ top, bottom, horizontal = false }: { top: ReactNode; bottom:
   )
 }
 
-function CarnivalPointsLabel({ multiline = false }: { multiline?: boolean }) {
+function CarnivalPointsLabel() {
   return (
     <>
-      <span className="carnival-points-label">Carnival{multiline ? <br /> : ' '}points:</span>
-      <svg className="carnival-points-icon" viewBox="0 0 32 20" aria-hidden="true" focusable="false">
-        <path fillRule="evenodd" d="M1 3C5 2 9 2 13 5l3 2 3-2c4-3 8-3 12-2-1 6-4 12-9 13-3 .5-5-1-6-3-1 2-3 3.5-6 3C5 15 2 9 1 3Zm4 4c1 3 3 5 7 4-1-2-4-4-7-4Zm22 0c-3 0-6 2-7 4 4 1 6-1 7-4Z" />
-      </svg>
+      <span className="sr-only">Carnival points: </span>
+      <span className="carnival-points-icon" aria-hidden="true">🎭</span>
     </>
   )
 }
 
 type Props = { numPlayers: number; difficulty: Difficulty; onExit: () => void; audioEnabled: boolean }
+
+const compactSchedulesQuery = '(max-width: 950px) and (max-height: 500px) and (orientation: landscape)'
+const subscribeCompactSchedules = (callback: () => void) => {
+  const media = window.matchMedia(compactSchedulesQuery)
+  media.addEventListener('change', callback)
+  return () => media.removeEventListener('change', callback)
+}
+const getCompactSchedules = () => window.matchMedia(compactSchedulesQuery).matches
 
 function shuffledDecks(): WeekDecks {
   const [first, second, third] = makeDecks()
@@ -79,7 +85,8 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
   const [dragPreview, setDragPreview] = useState<{ card: Card; left: number; top: number; rotation: number; tiltX: number; tiltY: number; scale: number } | null>(null)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [hover, setHover] = useState<{ day: number; slot: number } | null>(null)
-  const [expandedComputerSchedules, setExpandedComputerSchedules] = useState<Set<number>>(() => new Set())
+  const compactSchedules = useSyncExternalStore(subscribeCompactSchedules, getCompactSchedules, () => false)
+  const [computerScheduleOverrides, setComputerScheduleOverrides] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     const previous = previousDealState.current
@@ -380,40 +387,28 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
               </div>
             )}
           </div>
-          {i !== 0 && (
-            <button
-              type="button"
-              className="computer-schedule-toggle"
-              aria-expanded={expandedComputerSchedules.has(i)}
-              aria-controls={`computer-schedule-days-${i}`}
-              onClick={() => setExpandedComputerSchedules((expanded) => {
-                const next = new Set(expanded)
-                if (next.has(i)) next.delete(i)
-                else next.add(i)
-                return next
-              })}
-            >
-              {expandedComputerSchedules.has(i) ? 'Hide schedule' : 'Show schedule'}
-            </button>
-          )}
           {i === 0 && !isOver && (
             <div className="schedule-tools">
-              <div className="week-badge"><span>Carnival Season</span><strong>Week {state.week} <small>of {WEEKS}</small></strong></div>
-              <button
-                className="primary-button start-next-week"
-                disabled={!state.weekComplete}
-                onClick={() => setState(startNextWeek)}
-              >
-                Start next week
-              </button>
+              {state.weekComplete ? (
+                <button
+                  className="primary-button start-next-week"
+                  onClick={() => setState(startNextWeek)}
+                >
+                  Start next week
+                </button>
+              ) : (
+                <div className="week-badge"><span>Carnival Season</span><strong>Week {state.week} <small>of {WEEKS}</small></strong></div>
+              )}
             </div>
           )}
           {i === 0 && (!isOver || bust !== null) && weekControls(bust)}
         </div>
         {i !== 0 && bust !== null && <p className="computer-busted-message">Busted on {DAYS[bust]}; values in this column and later columns count as zero.</p>}
-        <div className="player-row">
+        <div className={`player-row${state.week === WEEKS ? ' final-week-row' : ''}`}>
           <div className="card start-card">
+            {i === 0 && <span className="start-card-mask start-card-mask-above" aria-hidden="true">🎭</span>}
             <CardFace top={`💰 ${state.starting[i].money}`} bottom={`⚡ ${state.starting[i].energy}`} />
+            {i === 0 && <span className="start-card-mask start-card-mask-below" aria-hidden="true">🎭</span>}
           </div>
           {i !== 0 && !isOver && <strong className="computer-carnival-points" aria-live="polite"><CarnivalPointsLabel />{' '}{totals.points}</strong>}
           <div
@@ -518,8 +513,8 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
       <p className={`status${state.extraTurns !== null ? ' status-final-turns' : ''}${lastPlay || computersNearTuesday.length > 0 ? ' status-last-play' : ''}${bust !== null ? ' status-busted' : ''}`} role="status">
         <span className="status-sparkle" aria-hidden="true">✦</span>
         <span>
-          {state.finalTurnOrder !== null && !state.error && !isOver && 'Final Mardi Gras turns! Players go in picked-card value order; the player who played into Tuesday sits out. '}
-          {state.finalTurnTrigger !== null && state.finalTurnOrder === null && !state.error && !isOver && 'Tuesday reached! Finish the current draw; then everyone else takes one final turn in picked-card value order. '}
+          {state.finalTurnOrder !== null && !state.error && !isOver && 'Final Mardi Gras turns! Players go in picked-card value order; players who played vertically into Tuesday sit out. '}
+          {state.finalTurnTrigger !== null && state.finalTurnOrder === null && !state.error && !isOver && 'Tuesday reached! Finish the current draw; then players who did not play vertically into Tuesday take one final turn in picked-card value order. '}
           {state.error
             ? state.error
             : isOver
@@ -631,9 +626,34 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
 
       <span className="difficulty-badge computer-section-difficulty">Difficulty: {difficulty}</span>
       <ComputerSchedules>
-        {state.schedules.slice(1).map((_, k) => (
-          <div className={`computer-schedule${expandedComputerSchedules.has(k + 1) ? ' expanded' : ''}`} key={k + 1}>{renderSchedule(k + 1)}</div>
-        ))}
+        {state.schedules.slice(1).map((_, k) => {
+          const player = k + 1
+          const expanded = computerScheduleOverrides[player] ?? !compactSchedules
+          const toggle = () => setComputerScheduleOverrides((current) => ({
+            ...current,
+            [player]: !(current[player] ?? !compactSchedules),
+          }))
+          return (
+            <div
+              className={`computer-schedule${expanded ? ' expanded' : ''}`}
+              key={player}
+              role="button"
+              tabIndex={0}
+              aria-label={`Computer ${player}'s schedule`}
+              aria-expanded={expanded}
+              aria-controls={`computer-schedule-days-${player}`}
+              onClick={toggle}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  toggle()
+                }
+              }}
+            >
+              {renderSchedule(player)}
+            </div>
+          )
+        })}
       </ComputerSchedules>
 
       <section className="zone play-area">
@@ -650,15 +670,13 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
         </div>
         <div className="draw-area">
           <h2>Draw area ({state.drawArea.length})</h2>
-          <div className="cards">
+          <div className={`cards${state.blindCard ? ' cards-unavailable' : ''}`} aria-label={state.blindCard ? 'Draw area unavailable while placing a blind card' : undefined}>
             {state.drawArea.map((card) => renderDrawCard(card, canPick && !state.blindCard && playableIds.has(card.id)))}
           </div>
         </div>
         {state.blindCard && (
-          <div className={`blind-reveal${state.blindCard.orientation === 'horizontal' ? ' blind-reveal-horizontal' : ''}`}>
-            <h2>Blind draw</h2>
+          <div className="blind-reveal" aria-label="Blind draw">
             {renderDrawCard(state.blindCard, canPick && playableIds.has(state.blindCard.id))}
-            <p>{state.turn === 0 ? 'Place this card.' : `Computer ${state.turn} is placing this card.`}</p>
           </div>
         )}
       </section>

@@ -40,8 +40,12 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .primary-button { background: var(--green); color: #fff; border-color: var(--green); padding-inline: 1.4rem; }
 .primary-button:hover { background: #10513c; border-color: #10513c; }
 .primary-button span { color: #f2d16d; padding-left: 0.3rem; }
-.start-footer { margin-top: 1.6rem; color: #8f7e82; font-size: 0.65rem; font-weight: 900; letter-spacing: 0.18em; }
-.start-footer span { color: var(--gold); padding: 0 0.35rem; }
+.start-footer { margin-top: 1.6rem; }
+.start-footer a { display: inline-block; border-radius: 6px; transition: box-shadow 0.2s ease, transform 0.2s ease; }
+.start-footer a:hover, .start-footer a:focus-visible { box-shadow: 0 0 0 2px #f4c744, 0 0 16px #f4c74488; transform: translateY(-2px); }
+.start-footer a:focus-visible { outline: 2px solid #fff1bd; outline-offset: 3px; }
+.start-footer img { display: block; width: min(190px, 50vw); height: auto; border-radius: inherit; }
+@media (prefers-reduced-motion: reduce) { .start-footer a { transition: none; } }
 .game { --card-h: calc(var(--card-w) * 2); max-width: 1600px; padding: 1.25rem 1rem; }
 .game-header { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.25rem; text-align: center; }
 .game-header h1 { color: var(--deep-purple); font: 800 clamp(2.6rem, 5vw, 4rem)/1.1 Georgia, serif; letter-spacing: -0.035em; }
@@ -69,7 +73,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .schedule-heading .week-badge { min-width: 125px; padding: 0.4rem 0.7rem; }
 .schedule-title h2 { margin: 0 0 0.25rem; }
 .carnival-points { display: inline-flex; align-items: center; min-height: 36px; padding: 0.3rem 0.55rem; border: 1px solid #c9aed5; border-radius: 8px; background: #efe3f4; color: var(--deep-purple); font-size: 0.85rem; }
-.carnival-points-icon { display: none; }
+.carnival-points-icon { flex: 0 0 auto; line-height: 1; }
 .status { display: flex; align-items: center; gap: 0.7rem; margin: 0 0 1.2rem; padding: 0.8rem 1rem; border: 1px solid #cfe0d4; border-radius: 10px; background: #e8f4eb; color: #205d45; font-size: 0.9rem; font-weight: 800; }
 .status-sparkle { color: #a57a17; font-size: 1.1rem; }
 .status-warning-line { display: block; }
@@ -128,14 +132,17 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .computer-schedules.fade-left { mask-image: linear-gradient(to right, transparent, #000 1.5rem); }
 .computer-schedules.fade-right { mask-image: linear-gradient(to left, transparent, #000 1.5rem); }
 .computer-schedules.fade-left.fade-right { mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent); }
-.computer-schedule { --card-w: 50px; --card-h: calc(var(--card-w) * 2); --day-padding: 0.12rem; flex: 0 0 max-content; }
+.computer-schedule { --card-w: 50px; --card-h: calc(var(--card-w) * 2); --day-padding: 0.12rem; flex: 0 0 max-content; cursor: pointer; }
+.computer-schedule:focus-visible { outline: 2px solid #f4c744; outline-offset: 2px; }
 .computer-schedule:first-child { margin-left: auto; }
 .computer-schedule:last-child { margin-right: auto; }
 .computer-schedule .schedule-zone { height: calc(100% - 1.25rem); padding: 0.7rem; }
 .computer-schedule .schedule-zone h2 { margin: 0; font-size: 0.8rem; }
 .computer-carnival-points { align-self: flex-start; margin-left: auto; padding: 0.2rem 0.4rem; border: 1px solid #c9aed5; border-radius: 7px; background: #efe3f4; color: var(--deep-purple); font-size: 0.72rem; white-space: nowrap; }
 .computer-schedule .schedule-heading { align-items: flex-start; gap: 0.35rem; }
-.computer-schedule-toggle { display: none; }
+.computer-schedule .schedule-heading::after { content: "▸"; color: #e2c36d; }
+.computer-schedule.expanded .schedule-heading::after { content: "▾"; }
+.computer-schedule:not(.expanded) .days { display: none; }
 .computer-schedule .player-row { display: grid; grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr); align-items: center; gap: 0.45rem; overflow: visible; }
 .computer-schedule .computer-carnival-points { grid-column: 2; grid-row: 1; align-self: center; margin: 0; }
 .computer-schedule .days { grid-row: 2; grid-column: 1 / -1; }
@@ -160,6 +167,11 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .day { padding: var(--day-padding); border: 1px dashed #d9cbaa; border-radius: 10px; background: #fbf7ed; }
 .day-label { padding: 0 0 0.35rem; color: #9a8063; font-size: 0.65rem; font-weight: 900; letter-spacing: 0.12em; text-align: center; text-transform: uppercase; }
 .day-inner { position: relative; height: calc(var(--card-h) * 2); min-width: var(--card-w); background: linear-gradient(to bottom, #f1e8f7 0 25%, #e8f3e8 25% 50%, #fff4d6 50% 75%, #f1e8f7 75% 100%); }
+.your-schedule .player-row, .final-boards .player-row { --schedule-label-height: 1.2rem; }
+.your-schedule .final-week-row, .final-boards .final-week-row { --schedule-label-height: 1.8rem; }
+.your-schedule .day-label, .final-boards .day-label { box-sizing: border-box; height: var(--schedule-label-height); }
+.your-schedule .player-row > .start-card, .your-schedule .player-row > .total-card,
+.final-boards .player-row > .start-card, .final-boards .player-row > .total-card { transform: translateY(calc(var(--schedule-label-height) / 2)); }
 .final-week .day-label { min-height: 1.55rem; }
 .mardi-gras-day:not(.busted-day) { border: 2px solid #bd8c25; background: #f7e9bf; box-shadow: 0 0 0 2px #f7e9bf, 0 0 16px #bd8c2555; }
 .mardi-gras-day:not(.busted-day) .day-label { color: var(--deep-purple); }
@@ -172,14 +184,14 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .slotted, .slot-zone { position: absolute; left: 50%; top: calc(var(--slot) * var(--card-h) / 2); transform: translateX(-50%); }
 .slot-zone { width: var(--card-w); aspect-ratio: 1 / 2; border: 2px dashed #29825f; border-radius: 9px; background: rgba(41, 130, 95, 0.14); pointer-events: none; z-index: 9998; }
 .slot-zone.hover { background: rgba(41, 130, 95, 0.35); border-style: solid; z-index: 9999; }
-.play-area { display: flex; gap: 1.2rem; align-items: flex-start; background: #f5eddf; }
+.play-area { display: grid; grid-template-columns: var(--card-w) minmax(0, 1fr) auto; grid-template-areas: "deck draw blind"; gap: 1.2rem; align-items: start; background: #f5eddf; }
 .play-area h2 { margin-bottom: 0.7rem; }
-.draw-area { flex: 1; min-width: 0; }
+.draw-area { grid-area: draw; align-self: stretch; min-width: 0; }
 .blind-draw-button { display: block; width: var(--card-w); margin-top: 0.5rem; padding-inline: 0.25rem; }
 .blind-draw-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.blind-reveal { flex: 0 0 var(--card-w); }
-.blind-reveal-horizontal { flex-basis: calc(var(--card-w) * 2); }
-.blind-reveal p { margin-top: 0.5rem; color: var(--purple); font-size: 0.8rem; font-weight: 700; }
+.deck-pile { grid-area: deck; width: var(--card-w); }
+.cards-unavailable { filter: grayscale(1); opacity: 0.35; }
+.blind-reveal { grid-area: blind; align-self: center; position: relative; z-index: 1; }
 .blind-notice { margin: 0 0 0.75rem; padding: 0.8rem 1rem; border: 1px solid #e3c66e; border-radius: 10px; background: #fff7dd; color: #674b11; font-weight: 700; }
 .cards { display: flex; flex-wrap: wrap; gap: 0.55rem; min-height: 100px; padding: 0.6rem; border: 1px dashed #ceb995; border-radius: 10px; background: #fffaf0; }
 .card { width: var(--card-w); aspect-ratio: 1 / 2; flex-shrink: 0; padding: 0.5rem; border: 2px solid #d1b76f; border-radius: 9px; background: #fffdf7; color: #43224f; box-shadow: 0 3px 7px #3b233520; display: flex; flex-direction: column; justify-content: space-between; gap: 0.25rem; }
@@ -228,6 +240,17 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .double-negative-card { border-color: #4f2268; background: repeating-linear-gradient(45deg, #fff 0 9px, #e9dff0 9px 18px); color: #4f2268; }
 .double-negative-card .card-face hr { background: #4f2268; }
 .start-card { background: linear-gradient(to bottom, #e8f3e8 0 50%, #fff4d6 50% 100%); border-color: #d4ae4f; }
+.your-schedule .start-card { position: relative; }
+.start-card-mask {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(0.9rem, calc(var(--card-w) * 0.28), 1.8rem);
+  line-height: 1;
+  pointer-events: none;
+}
+.start-card-mask-above { top: calc(var(--card-h) / -4); }
+.start-card-mask-below { top: calc(100% + var(--card-h) / 4); }
 .total-card { background: linear-gradient(to bottom, #e8f3e8 0 50%, #fff4d6 50% 100%); border-color: #85b395; }
 .start-card .card-face span, .total-card .card-face span { font-size: 1.2rem; white-space: nowrap; }
 .start-card .card-face hr { background: #dbb85b; }
@@ -313,11 +336,10 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .days { --day-gap: 0.2rem; }
   .day { padding: 0.15rem; border-radius: 7px; }
   .day-label { padding-bottom: 0.2rem; font-size: 0.58rem; letter-spacing: 0.06em; }
-  .play-area { flex-wrap: wrap; gap: 0.5rem; padding: 0.6rem; margin-bottom: 0.5rem; }
+  .play-area { grid-template-columns: var(--card-w) minmax(0, 1fr); grid-template-areas: "deck draw" "blind draw"; row-gap: 0.5rem; column-gap: 0.5rem; padding: 0.6rem; margin-bottom: 0.5rem; }
+  .blind-reveal { align-self: start; }
   .play-area h2 { margin-bottom: 0.35rem; font-size: 0.78rem; }
-  .deck-pile { flex: 0 0 auto; }
   .blind-draw-button { font-size: 0.7rem; }
-  .draw-area { flex: 1 1 0; }
   .cards { flex-wrap: nowrap; gap: 0.35rem; min-height: 0; max-width: 100%; overflow-x: auto; padding: 0.35rem; }
   .cards .card { padding: 0.3rem; }
   .card-face { font-size: 1.4rem; }
@@ -334,9 +356,9 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 
 @media (max-width: 600px), (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
   .hero-copy-mobile-break { display: initial; }
+  .your-schedule .player-row, .final-boards .player-row { --schedule-label-height: 1rem; }
+  .your-schedule .final-week-row, .final-boards .final-week-row { --schedule-label-height: 1.5rem; }
   .carnival-points, .computer-carnival-points { position: relative; }
-  .carnival-points-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-  .carnival-points-icon { display: block; flex: 0 0 auto; width: 1.15rem; height: 0.75rem; fill: #d78cff; }
   .computer-carnival-points { display: inline-flex; align-items: center; gap: 0.25rem; }
 }
 
@@ -378,14 +400,12 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .computer-schedule { --card-w: 38px; --card-h: calc(var(--card-w) * 2); }
   .computer-schedule .schedule-zone { height: auto; margin-bottom: 0; padding: 0.35rem; }
   .computer-schedule .schedule-zone h2 { margin-bottom: 0.3rem; font-size: 0.67rem; }
-  .computer-schedule .computer-schedule-toggle { display: block; flex: 0 0 auto; padding: 0.2rem 0.35rem; font-size: 0.58rem; }
-  .computer-schedule:not(.expanded) .days { display: none; }
-  .computer-schedule.expanded .days { display: grid; }
   .computer-schedule .player-row { gap: 0.25rem; }
   .computer-schedule .day-label { font-size: 0.45rem; }
-  .game > .play-area { grid-column: 1; grid-row: 3; align-self: stretch; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0.45rem; }
+  .game > .play-area { grid-column: 1; grid-row: 3; align-self: stretch; grid-template-columns: var(--card-w) minmax(0, 1fr); grid-template-areas: "deck draw" "blind draw"; gap: 0.4rem; margin: 0; padding: 0.45rem; }
+  .blind-reveal { align-self: start; }
   .play-area h2 { margin-bottom: 0.3rem; font-size: 0.7rem; }
-  .draw-area { display: flex; flex: 1 1 0; flex-direction: column; align-self: stretch; width: 0; }
+  .draw-area { display: flex; flex-direction: column; align-self: stretch; width: auto; }
   .cards { display: grid; flex: 1 1 0; grid-template-columns: repeat(auto-fill, var(--card-w)); grid-auto-rows: var(--card-w); grid-auto-flow: row dense; align-content: start; gap: 0.25rem; min-height: 0; overflow: auto; padding: 0.25rem; }
   .cards > .card { grid-row: span 2; align-self: start; }
   .cards > .card.horizontal-card { grid-column: span 2; grid-row: span 1; }
@@ -396,7 +416,6 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .game .card .flip-arrows { font-size: 0.5rem; }
   .game > .your-schedule .start-card .card-face span, .game > .your-schedule .total-card .card-face span { font-size: 0.58rem; }
   .blind-draw-button { margin-top: 0.25rem; padding: 0.25rem; font-size: 0.62rem; }
-  .blind-reveal { flex-basis: 100%; }
   .game > .your-schedule { grid-column: 2; grid-row: 3; align-self: stretch; max-width: none; margin: 0; padding: 0.45rem; }
   .schedule-heading { align-items: center; gap: 0.25rem; }
   .your-schedule .schedule-heading { grid-template-columns: minmax(max-content, 1fr) minmax(0, 999fr) minmax(max-content, 1fr); gap: 0.25rem; }
@@ -428,16 +447,20 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 
 .your-schedule .schedule-title .carnival-points {
   min-height: 0;
-  gap: 0.25rem;
-  padding: 0.2rem 0.4rem;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.55rem;
   border-radius: 7px;
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
 }
-.your-schedule .schedule-title .carnival-points-score { font-size: 1em; line-height: normal; }
+.your-schedule .schedule-title .carnival-points-score { font-size: 1.35rem; line-height: 1; }
+.computer-carnival-points { font-size: 1.1rem; }
 @media (max-width: 600px) {
-  .your-schedule .schedule-title .carnival-points { padding: 0.15rem 0.25rem; font-size: 0.62rem; }
+  .your-schedule .schedule-title .carnival-points { margin-top: 0.25rem; padding: 0.25rem 0.4rem; font-size: 0.62rem; }
+  .your-schedule .schedule-title .carnival-points-score { font-size: 1.15rem; }
+  .computer-schedule .computer-carnival-points { font-size: 1rem; }
 }
 
 @media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
@@ -462,6 +485,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .start-actions { gap: 0.35rem; margin-top: 0.45rem; }
   .start-actions button { padding: 0.35rem 0.55rem; font-size: 0.7rem; }
   .start-footer { grid-column: 1 / -1; margin-top: 0.2rem; }
+  .start-footer img { width: 110px; }
 }
 
 @media (max-height: 750px) {
@@ -822,20 +846,18 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #120e15; }
 .final-boards .final-calculation .final-score-value {
   display: inline-flex; align-items: center; gap: 0.3rem; min-height: 0;
   padding: 0.25rem 0.45rem; border: 1px solid #9e4dc1; border-radius: 7px;
-  background: linear-gradient(145deg, #452052, #2d193c); color: #f0cbff; font-size: 0.85rem;
+  background: linear-gradient(145deg, #452052, #2d193c); color: #f0cbff; font-size: 1.25rem;
 }
-.final-calculation .carnival-points-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
-.final-calculation .carnival-points-icon { display: block; width: 1.15rem; height: 0.75rem; fill: #d78cff; }
 .final-boards .final-calculation .final-score-money { border-color: #268d69; background: linear-gradient(145deg, #1d533f, #163629); color: #d8ffe7; }
 .final-boards .final-calculation .final-score-energy { border-color: #a88435; background: linear-gradient(145deg, #594218, #392d17); color: #fff1c1; }
 .final-score-operator { color: #e8c86b; font-size: 1.2rem; font-weight: 900; }
-.final-score-result { color: #ffe28a; font-size: 1.6rem; line-height: 1; }
+.final-score-result { color: #ffe28a; font-size: 2.2rem; line-height: 1; }
 .final-tuesday-count { display: inline-block; margin-top: 0.3rem; color: #d8c4de; font-size: 0.75rem; font-weight: 700; }
 @media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
   .final-calculation { gap: 0.25rem; }
-  .final-boards .final-calculation .final-score-value { padding: 0.15rem 0.3rem; font-size: 0.7rem; }
-  .final-score-operator { font-size: 0.9rem; }
-  .final-score-result { font-size: 1.25rem; }
+  .final-boards .final-calculation .final-score-value { padding: 0.15rem 0.3rem; font-size: 1.1rem; }
+  .final-score-operator { font-size: 1.1rem; }
+  .final-score-result { font-size: 1.8rem; }
   .final-tuesday-count { font-size: 0.65rem; }
 }
 

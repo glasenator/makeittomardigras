@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import RulesButton from './RulesButton'
 import WalkthroughButton from './WalkthroughButton'
 import NeonTitle from './NeonTitle'
+import logoUrl from './assets/logo.png'
 import type { Difficulty } from './computerPlayer'
 
 export const MIN_PLAYERS = 2
@@ -89,7 +90,11 @@ function StartScreen({ onStart }: Props) {
             <RulesButton />
           </div>
         </section>
-        <p className="start-footer"><a href="https://www.glaserbeamgames.com" target="_blank" rel="noreferrer">GLASERBEAM GAMES</a></p>
+        <p className="start-footer">
+          <a href="https://www.glaserbeamgames.com" target="_blank" rel="noreferrer">
+            <img src={logoUrl} alt="Glaserbeam Games" />
+          </a>
+        </p>
       </div>
     </main>
   )

@@ -31,7 +31,7 @@ const cards = [
   { id: 6, top: 0, bottom: 4 },
   { id: 7, top: 1, bottom: 1 },
 ]
-const game = () => ({ ...newGame(2, [cards, cards, cards]), turn: 1 })
+const game = () => ({ ...newGame(2, [cards, cards, cards], () => 0), turn: 1 })
 
 test('easy selects a random playable card and then a random legal position', () => {
   const state = game()

@@ -15,7 +15,7 @@ const card = (id, top = 2, bottom = 3, placedAt = 1) => ({ id, top, bottom, plac
 const empty = () => Array.from({ length: 7 }, () => [null, null, null])
 function stateWith(incoming, schedule = empty()) {
   const cards = [incoming, ...Array.from({ length: 12 }, (_, i) => ({ id: 100 + i, top: 1, bottom: 1 }))]
-  const state = newGame(2, [cards, cards, cards])
+  const state = newGame(2, [cards, cards, cards], () => 0)
   state.schedules[0] = schedule
   return state
 }

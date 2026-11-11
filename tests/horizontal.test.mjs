@@ -17,7 +17,7 @@ const horizontal = (id, top, bottom, row, placedAt = 1) => ({ id, top, bottom, o
 const incoming = (id, top, bottom) => ({ id, top, bottom, orientation: 'horizontal' })
 function stateWith(card, schedule = empty()) {
   const cards = [card, ...Array.from({ length: 20 }, (_, i) => ({ id: i + 100, top: 1, bottom: 1 }))]
-  const state = newGame(2, [cards, cards, cards])
+  const state = newGame(2, [cards, cards, cards], () => 0)
   state.schedules[0] = schedule
   return state
 }

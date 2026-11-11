@@ -21,7 +21,7 @@ const { visibleSections } = await import(
 )
 
 const deck = (length) => Array.from({ length }, (_, i) => ({ id: i + 1, top: i + 1, bottom: i + 2 }))
-const newGame = (players, cards) => createGame(players, [cards, cards.map((c) => ({ ...c })), cards.map((c) => ({ ...c }))])
+const newGame = (players, cards) => createGame(players, [cards, cards.map((c) => ({ ...c })), cards.map((c) => ({ ...c }))], () => 0)
 const pick = (state, day, slot) => {
   const [card, ...rest] = state.drawArea
   const column = state.schedules[state.turn][day]
@@ -40,6 +40,36 @@ const allCards = (state) => [
   ...state.setAside,
   ...state.schedules.flat(2).filter(Boolean),
 ]
+
+test('the first player is randomly selected for every supported player count', () => {
+  for (let players = 2; players <= 5; players++) {
+    const cards = deck(20)
+    for (let starter = 0; starter < players; starter++) {
+      const state = createGame(players, [cards, cards, cards], () => (starter + 0.5) / players)
+      assert.equal(state.turn, starter)
+      assert.equal(state.weekStarter, starter)
+      assert.equal(state.drawStarter, starter)
+      const next = playCard(state, state.drawArea[0].id, 0, 0)
+      assert.equal(next.schedules[starter][0][0].id, state.drawArea[0].id)
+      assert.equal(next.turn, (starter + 1) % players)
+    }
+  }
+})
+
+test('a computer starting player anchors clockwise draw and week tie-breaks', () => {
+  const cards = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, top: 1, bottom: 1 }))
+  let state = createGame(2, [cards, cards, cards], () => 0.9)
+  state = playCard(state, state.drawArea[0].id, 0, 0)
+  state = playCard(state, state.drawArea[0].id, 0, 0)
+  assert.equal(state.turn, 0)
+  assert.equal(state.drawStarter, 0)
+  state = playCard(state, state.drawArea[0].id, 1, 0)
+  state = playCard(state, state.drawArea[0].id, 1, 0)
+  assert.equal(state.weekComplete, true)
+  state = startNextWeek(state)
+  assert.equal(state.weekStarter, 0)
+  assert.equal(state.turn, 0)
+})
 
 test('refill retains the last card and deals exactly one new card per player', () => {
   for (let players = 2; players <= 5; players++) {
@@ -145,6 +175,38 @@ test('Tuesday trigger sits out while remaining final turns follow picked-card va
   assert.equal(state.finalTurnTrigger, null)
   assert.equal(state.finalTurnOrder, null)
   assert.equal(allCards(state).filter((card) => cards.some((original) => original.id === card.id)).length, cards.length)
+})
+
+test('all players reaching Tuesday in the current draw sit out the final draw', () => {
+  const cards = deck(20)
+  let state = newGame(3, cards)
+  for (const player of [0, 1]) {
+    state.schedules[player][5][0] = { id: 100 + player, top: 1, bottom: 1, placedAt: 1 }
+  }
+  state = playCard(state, cards[0].id, 6, 0)
+  state = playCard(state, cards[1].id, 6, 0)
+  state = playCard(state, cards[2].id, 0, 0)
+
+  assert.deepEqual(state.finalTurnTriggers, [0, 1])
+  assert.deepEqual(state.finalTurnOrder, [2])
+  assert.equal(state.turn, 2)
+  state = playCard(state, state.drawArea[0].id, 0, 2)
+  assert.equal(state.weekComplete, true)
+  assert.deepEqual(state.finalTurnTriggers, [])
+  assert.equal(state.schedules[0].flat().filter(Boolean).length, 2)
+  assert.equal(state.schedules[1].flat().filter(Boolean).length, 2)
+})
+
+test('the week ends immediately if all players reach Tuesday in the current draw', () => {
+  const cards = deck(10)
+  let state = newGame(2, cards)
+  for (const player of [0, 1]) {
+    state.schedules[player][5][0] = { id: 100 + player, top: 1, bottom: 1, placedAt: 1 }
+  }
+  state = playCard(state, cards[0].id, 6, 0)
+  state = playCard(state, cards[1].id, 6, 0)
+  assert.equal(state.weekComplete, true)
+  assert.deepEqual(state.finalTurnTriggers, [])
 })
 
 test('game ends after the third week and retains final schedules and scores', () => {
@@ -290,7 +352,7 @@ test('distinct decks are used in order without mixing cards between weeks', () =
   const decks = [0, 100, 200].map((offset) =>
     deck(4).map((card) => ({ ...card, id: card.id + offset, top: card.top + offset })),
   )
-  let state = createGame(2, decks)
+  let state = createGame(2, decks, () => 0)
   for (let week = 0; week < 3; week++) {
     assert.equal(state.week, week + 1)
     assert.deepEqual(allCards(state).map((card) => card.id).sort((a, b) => a - b), decks[week].map((card) => card.id))
@@ -303,7 +365,7 @@ test('distinct decks are used in order without mixing cards between weeks', () =
 })
 
 test('an undersized later deck reports an error instead of dealing a partial draw area', () => {
-  const state = createGame(2, [deck(4), deck(2), deck(4)])
+  const state = createGame(2, [deck(4), deck(2), deck(4)], () => 0)
   const after = startNextWeek(pick(pick(state, 0, 0), 0, 0))
   assert.equal(after.week, 2)
   assert.equal(after.drawArea.length, 0)
