@@ -51,6 +51,19 @@ npm run lint                  # Lint
 node --test tests/*.test.mjs  # Game tests
 ```
 
+## Deploy to Heroku
+
+The app uses Node.js 22 on Heroku. Heroku builds it during deployment and serves the production files using `npm start` on its assigned port.
+
+```bash
+heroku login
+heroku create make-it-to-mardi-gras
+git push heroku main
+heroku open
+```
+
+For an existing Heroku app, replace `heroku create` with `heroku git:remote -a YOUR_APP_NAME`. App names must be globally unique, and running an app can incur Heroku charges.
+
 ## Customize the decks
 
 Edit the three independent card lists in [`src/deck.ts`](src/deck.ts). Weeks 2 and 3 currently use placeholder values.
