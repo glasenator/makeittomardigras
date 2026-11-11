@@ -711,6 +711,35 @@ test('final week applies busting before displaying final scores', () => {
   assert.equal(startNextWeek(state), state)
 })
 
+test('completed weeks eliminate a recovered bust and carry or score only earlier columns', () => {
+  for (const week of [1, 3]) {
+    for (const resource of ['money', 'energy']) {
+      let state = newGame(2, deck(4))
+      state = {
+        ...state,
+        week,
+        turn: 1,
+        extraTurns: 1,
+        schedules: state.schedules.map((schedule, player) => player === 0
+          ? schedule.map((column, day) => {
+            if (day === 0) return [{ id: 101, top: 3, bottom: 1, placedAt: 1 }, null, null]
+            if (day === 1) return [null, { id: 102, top: resource === 'money' ? -7 : 0, bottom: resource === 'energy' ? -6 : 0, placedAt: 1 }, null]
+            if (day === 6) return [null, { id: 103, top: resource === 'money' ? 7 : 0, bottom: resource === 'energy' ? 6 : 0, placedAt: 1 }, null]
+            return column
+          })
+          : schedule),
+      }
+
+      state = playCard(state, state.drawArea[0].id, 0, 0)
+      assert.equal(state.weekComplete, true)
+      assert.equal(state.bustColumns[0], 1, `${resource}, week ${week}`)
+      assert.deepEqual(completedWeekTotals(state)[0], { money: 6, energy: 5, points: 3 })
+      if (week === 1) assert.deepEqual(startNextWeek(state).starting[0], { money: 6, energy: 5, points: 3 })
+      else assert.equal(finalScore(completedWeekTotals(state)[0]), -8)
+    }
+  }
+})
+
 test('negative resources first reached on final Tuesday count as zero without graying Tuesday', () => {
   let state = newGame(2, deck(4))
   state = {

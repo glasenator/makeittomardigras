@@ -61,13 +61,28 @@ test('all placement orders score only the topmost value in each section', () => 
   }
 })
 
-test('busting uses the first negative resource column when final resources are negative', () => {
+test('busting uses the first negative resource column even if later values recover', () => {
   const column = (id, money, energy) => [null, { id, top: money, bottom: energy, placedAt: 1 }, null]
   const starting = { money: 5, energy: 5, points: 10 }
   assert.equal(bustColumn([column(1, -6, 0), column(2, 3, 0), column(3, -3, 0)], starting), 0)
   assert.equal(bustColumn([column(1, -5, 0), column(2, 0, -6)], starting), 1)
-  assert.equal(bustColumn([column(1, -6, 0), column(2, 2, 0)], starting), null)
+  assert.equal(bustColumn([column(1, -6, 0), column(2, 2, 0)], starting), 0)
+  assert.equal(bustColumn([column(1, 0, -6), column(2, 0, 1)], starting), 0)
+  assert.equal(bustColumn([column(1, -5, -5), column(2, 0, 0)], starting), null)
   assert.equal(bustColumn([column(1, 0, 0)], starting), null)
+})
+
+test('a pre-Mardi Gras bust remains even when Tuesday restores both resources', () => {
+  const schedule = Array.from({ length: 7 }, () => [null, null, null])
+  const starting = { money: 5, energy: 5, points: 10 }
+  schedule[0][0] = { id: 1, top: 3, bottom: 1, placedAt: 1 }
+  schedule[5][1] = { id: 2, top: -7, bottom: -6, placedAt: 1 }
+  schedule[6][1] = { id: 3, top: 7, bottom: 6, placedAt: 1 }
+  schedule[6][2] = { id: 4, top: 3, bottom: 4, placedAt: 2 }
+
+  assert.deepEqual(scheduleTotals(schedule, starting), { money: 6, energy: 2, points: 17 })
+  assert.equal(bustColumn(schedule, starting, true), 5)
+  assert.deepEqual(scheduleTotalsAfterBust(schedule, starting, true), { money: 6, energy: 5, points: 13 })
 })
 
 test('week-three Mardi Gras Tuesday prevents a bust on that column and floors negative resources at zero', () => {

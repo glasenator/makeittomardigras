@@ -78,9 +78,6 @@ export function scheduleTotals(
 }
 
 export function bustColumn(schedule: Schedule, starting: PlayerTotals, protectFinalColumn = false): number | null {
-  const final = scheduleTotals(schedule, starting)
-  if (final.money >= 0 && final.energy >= 0) return null
-
   const columnsToCheck = protectFinalColumn ? schedule.length - 1 : schedule.length
   for (let day = 0; day < columnsToCheck; day++) {
     const totals = scheduleTotals(schedule, starting, day + 1)

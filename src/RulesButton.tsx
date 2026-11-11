@@ -102,7 +102,7 @@ function RulesButton() {
           <h3>5. End the Week</h3>
           <p>A week ends when the deck cannot refill the draw area or if a player places a <strong>vertical card in the final column, Tuesday.</strong> Refill the draw area and then every other player who did not play a vertical card into Tuesday will get one more draw and placement. A horizontal card spanning into Tuesday does not trigger final turns. If the deck cannot fully refill the draw area, use the cards that remain; if there are not enough for everyone, then no one gets a final extra turn.</p>
           <h4>Check for a bust</h4>
-          <p>After the week ends, check each player&apos;s final <span aria-hidden="true">💰</span> MONEY and <span aria-hidden="true">⚡</span> ENERGY:</p>
+          <p>After the week ends, check each player&apos;s running <span aria-hidden="true">💰</span> MONEY and <span aria-hidden="true">⚡</span> ENERGY from left to right, even if the final totals are positive:</p>
           <ul>
             <li>If both values never went into the negatives, no columns are busted.</li>
             <li>If either went into the negatives, start with your starting amounts and add each column from left to right. Find the first column where money or energy drops below zero. Eliminate that column and every column after it; all their values, including carnival points, count as zero. If a horizontal card crosses the bust line, its section before the line still counts.</li>

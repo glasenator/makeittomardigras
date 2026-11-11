@@ -289,10 +289,11 @@ test('Sunday and Monday do not trigger final turns; Tuesday vertical placement d
   assert.equal(state.extraTurns, null)
 })
 
-test('a horizontal card scores its earlier section across the bust boundary', () => {
+test('a horizontal card scores its earlier section across a bust boundary even if later money recovers', () => {
   const schedule = empty()
   schedule[0].push(horizontal(1, 4, -10, 1))
-  assert.deepEqual(scheduleTotals(schedule), { money: -1, energy: 5, points: 0 })
+  schedule[3][1] = vertical(2, 10, 0)
+  assert.deepEqual(scheduleTotals(schedule), { money: 9, energy: 5, points: 0 })
   assert.equal(bustColumn(schedule, { money: 5, energy: 5, points: 0 }), 1)
   assert.deepEqual(scheduleTotals(schedule, { money: 5, energy: 5, points: 0 }, 1), { money: 9, energy: 5, points: 0 })
   let state = stateWith({ id: 99, top: 1, bottom: -1 }, schedule)

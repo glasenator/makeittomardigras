@@ -1,4 +1,5 @@
 import { useId, useRef, useState, type ReactNode } from 'react'
+import WalkthroughVisual from './WalkthroughVisual'
 
 type Step = { title: string; content: ReactNode }
 
@@ -7,31 +8,27 @@ const steps: Step[] = [
     title: 'Welcome to the party!',
     content: (
       <>
-        <p>Build a Wednesday-to-Tuesday schedule over three weeks. Earn <span aria-hidden="true">🎭</span> carnival points, manage your <span aria-hidden="true">💰</span> money and <span aria-hidden="true">⚡</span> energy, and finish with the highest final score.</p>
+        <p>It&apos;s Carnival season in New Orleans! Build a Wednesday-to-Tuesday schedule over three Weeks, earning <span aria-hidden="true">🎭</span> CARNIVAL POINTS while managing your <span aria-hidden="true">💰</span> MONEY and <span aria-hidden="true">⚡</span> ENERGY.</p>
         <div className="walkthrough-example">
           <strong>Getting started</strong>
-          <p>Choose 2–5 players and a computer difficulty. Each player starts with <span aria-hidden="true">💰</span> 5 money and <span aria-hidden="true">⚡</span> 5 energy. A starting player is chosen at random for week 1. Card values range from 1–8 in week 1, 2–9 in week 2, and 3–10 in week 3: the range moves up by 1 each week.</p>
+          <p>Choose 2–5 players and a computer difficulty. Everyone starts with <span aria-hidden="true">💰</span> 5 MONEY and <span aria-hidden="true">⚡</span> 5 ENERGY. A random player draws first in Week 1.</p>
+          <p>Each Week has its own deck. Card values range from 1–8 in Week 1, 2–9 in Week 2, and 3–10 in Week 3. Each card has two sections: its number values have the same magnitude, such as -5 / +5 or -5 / -5.</p>
         </div>
         <p>This walkthrough uses examples only; it won&apos;t place cards in your game.</p>
       </>
     ),
   },
   {
-    title: 'Pick a card',
+    title: 'Draw a card',
     content: (
       <>
-        <p>On your turn, drag a face-up card to a highlighted space, or tap a card and then tap a highlighted space. Play then passes clockwise.</p>
+        <p>Starting with the first player, draw in clockwise order. Choose one face-up card from the draw area, or draw blind from the top of the deck.</p>
         <div className="walkthrough-example">
           <strong>Example: 3 players</strong>
           <p>The draw area starts with one more card than the number of players. With 3 players, that is 4 cards. If everyone takes a face-up card, one card remains.</p>
-          <div className="walkthrough-cards" aria-label="Example draw area: plus 2 and minus 1, minus 3 and plus 4, FLIP and plus 2, plus 1 and plus 3">
-            <span className="walkthrough-card" aria-hidden="true"><span>+2</span><span>-1</span></span>
-            <span className="walkthrough-card" aria-hidden="true"><span>-3</span><span>+4</span></span>
-            <span className="walkthrough-card" aria-hidden="true"><span className="flip-value flip-value-top"><span className="flip-arrows">↑</span><span>← FLIP →</span></span><span>+2</span></span>
-            <span className="walkthrough-card" aria-hidden="true"><span>+1</span><span>+3</span></span>
-          </div>
         </div>
-        <p>The deck shows the top card&apos;s back. A double-negative card shows its positive values; other backs are blank. When you draw blind, its front is revealed and automatically selected for you to place. If you have no legal placement, it is set aside and your turn is skipped. A blind draw also makes you ineligible to start the next draw. After everyone takes a turn, leave unpicked cards in place and refill the draw area.</p>
+        <p>The deck shows the top card&apos;s back: double-negative cards show positive values, while other backs are blank. A blind draw reveals the front. If you can&apos;t place it, set it aside and skip your turn. You can&apos;t draw blind from an empty deck.</p>
+        <p>After everyone draws, players add their cards to their schedules simultaneously.</p>
       </>
     ),
   },
@@ -39,12 +36,12 @@ const steps: Step[] = [
     title: 'Build your schedule',
     content: (
       <>
-        <p>Your schedule has seven columns, Wednesday through Tuesday. A vertical card covers two adjacent sections in one column. A horizontal card covers one section in each of two neighboring columns.</p>
+        <p>Your schedule has seven days, Wednesday through Tuesday, with four sections in each column. A vertical card covers two sections in one column; a horizontal card covers one section in each of two neighboring columns. Cards must fit within the schedule.</p>
         <div className="walkthrough-example">
-          <strong>Example: opening Thursday</strong>
-          <p>A card in Wednesday&apos;s middle row lets you connect a new card in any row of Thursday. Each new card must overlap or touch a card in its leftmost column, or touch a card in the same row of the previous column.</p>
+          <strong>Example: your first card</strong>
+          <p>Your starting values sit just left of Wednesday&apos;s two middle rows. A first vertical card can touch either starting value in any of its three positions. A first horizontal card must use one of those two rows.</p>
         </div>
-        <p>Your starting values count as sections just left of Wednesday, in its two middle rows. So your first horizontal card must use one of those rows; any vertical position can connect to a starting value. Gaps and diagonal sections do not connect.</p>
+        <p>Every new card must connect to an existing section: place it directly above, below, left, or right of that section, or overlap it. Gaps and diagonal sections don&apos;t connect. In the app, drag a card to a highlighted space, or tap the card and then a highlighted space.</p>
       </>
     ),
   },
@@ -52,12 +49,9 @@ const steps: Step[] = [
     title: 'Make the numbers fit',
     content: (
       <>
-        <p>New cards go on top. Cover a positive value with a negative value or FLIP. Cover a negative value with a positive value or FLIP. You cannot cover a visible FLIP.</p>
-        <div className="walkthrough-example">
-          <strong>Example: covering a -3</strong>
-          <p>A +2 or FLIP can cover -3. Another negative value cannot. Any value can cover a blank back. The positive values on a double-negative card&apos;s back follow the usual covering rules.</p>
-        </div>
-        <p>If your card covers two sections, both must follow the rules. You cannot cover both visible sections of the same card in one play. Hidden cards do not count. You may replace a partially covered vertical card if the play is legal; set the replaced card aside for the week. A partially covered horizontal card stays in place.</p>
+        <p>New cards can cover existing cards. Cover a positive value with a negative value or FLIP, and a negative value with a positive value or FLIP. You can&apos;t cover a visible FLIP; any value can cover a blank card back.</p>
+        <p>For example, the +5 section of a +5 / -5 card can cover the -3 section of a +3 / -3 card. Positive values on a double-negative card&apos;s back follow the same covering rules.</p>
+        <p>Each covered section must follow these rules. You can&apos;t cover both sections of a fully uncovered card in one placement, whether it&apos;s face up or face down.</p>
       </>
     ),
   },
@@ -68,9 +62,9 @@ const steps: Step[] = [
         <p>FLIP counts as zero. When you play a FLIP, turn over one fully uncovered adjacent card in your schedule, if possible. Follow the arrows on the FLIP to find eligible cards.</p>
         <div className="walkthrough-example">
           <strong>Face down and back up</strong>
-          <p>A double-negative card flips to its opposite positive values: -2 / -5 becomes +2 / +5. Those positive values score and follow the usual covering rules. Other cards have blank backs that count as zero. A later FLIP can turn an uncovered card back to its front without triggering its FLIP effect.</p>
+          <p>A double-negative card flips to positive values: -2 / -2 becomes +2 / +2. Other cards have blank backs that count as zero. A later FLIP can turn an uncovered card face up again without triggering that card&apos;s FLIP.</p>
         </div>
-        <p>If a card has two FLIPs, resolve the top or left one first, then the bottom or right one. Both may turn over the same card.</p>
+        <p>Follow the arrows on each FLIP to find an adjacent card; if none is eligible, nothing happens. Resolve two FLIPs one at a time: they may turn over the same card twice.</p>
       </>
     ),
   },
@@ -78,16 +72,16 @@ const steps: Step[] = [
     title: 'See what counts',
     content: (
       <>
-        <p>Each column has four sections. From top to bottom, they count as <strong><span aria-hidden="true">🎭</span> carnival points, <span aria-hidden="true">💰</span> money, <span aria-hidden="true">⚡</span> energy, and <span aria-hidden="true">🎭</span> carnival points</strong>. Only visible values count; a blank card back counts as zero.</p>
+        <p>Each column has four sections. From top to bottom, they count as <strong><span aria-hidden="true">🎭</span> CARNIVAL POINTS, <span aria-hidden="true">💰</span> MONEY, <span aria-hidden="true">⚡</span> ENERGY, and <span aria-hidden="true">🎭</span> CARNIVAL POINTS</strong>. Only visible values count; a blank card back counts as zero.</p>
         <div className="walkthrough-example">
           <strong>Example: one column</strong>
           <ul className="walkthrough-score-example">
-            <li>Top: <span aria-hidden="true">🎭</span> +2 carnival points</li>
-            <li>Second: <span aria-hidden="true">💰</span> -1 money</li>
-            <li>Third: <span aria-hidden="true">⚡</span> +3 energy</li>
-            <li>Bottom: <span aria-hidden="true">🎭</span> +4 carnival points</li>
+            <li>Top: <span aria-hidden="true">🎭</span> +2 CARNIVAL POINTS</li>
+            <li>Second: <span aria-hidden="true">💰</span> -2 MONEY</li>
+            <li>Third: <span aria-hidden="true">⚡</span> +3 ENERGY</li>
+            <li>Bottom: <span aria-hidden="true">🎭</span> +3 CARNIVAL POINTS</li>
           </ul>
-          <p>Starting from <span aria-hidden="true">💰</span> 5 money and <span aria-hidden="true">⚡</span> 5 energy, the result is <strong><span aria-hidden="true">🎭</span> 6 carnival points, <span aria-hidden="true">💰</span> 4 money, and <span aria-hidden="true">⚡</span> 8 energy</strong>. Covered values do not count.</p>
+          <p>Starting from <span aria-hidden="true">💰</span> 5 MONEY and <span aria-hidden="true">⚡</span> 5 ENERGY, the result is <strong><span aria-hidden="true">🎭</span> 5 CARNIVAL POINTS, <span aria-hidden="true">💰</span> 3 MONEY, and <span aria-hidden="true">⚡</span> 8 ENERGY</strong>. Covered values do not count.</p>
         </div>
       </>
     ),
@@ -96,25 +90,25 @@ const steps: Step[] = [
     title: 'Who picks first next?',
     content: (
       <>
-        <p>After everyone has taken a turn, refill the draw area. Anyone who drew blind cannot start the next draw. The other players add the two values on their picked card; FLIP counts as zero. The lowest total starts.</p>
+        <p>After everyone has placed, leave unpicked cards in the draw area and refill it to its starting size. Anyone who drew blind can&apos;t start the next draw. Everyone else adds the two values on their picked card; FLIP counts as zero. The lowest sum starts.</p>
         <div className="walkthrough-example">
           <strong>Example: a tie</strong>
-          <p>Both cards total 1. The first card wins the tie because its lowest value, -3, is lower than -2.</p>
+          <p>-8 / +8 and -2 / +2 both total 0. The -8 / +8 card wins because -8 is the lower individual value.</p>
         </div>
         <p>If still tied, the first tied player clockwise from the previous starting player goes first. If everyone drew blind, the next player clockwise goes first. Final Mardi Gras turns use the picked-card order described in the next step.</p>
       </>
     ),
   },
   {
-    title: 'The week wraps up',
+    title: 'The Week wraps up',
     content: (
       <>
-        <p>The week ends when the deck cannot refill the draw area. A vertical card in Tuesday starts the <strong>final turns</strong>. The player who places it is done for the week. Finish the current draw, then the other players each take one final turn in order of their picked card&apos;s combined value, lowest first. Use the usual tie-breakers; players who drew blind go after players with a picked card. A horizontal card spanning Tuesday does not start final turns.</p>
+        <p>The Week ends when the deck can&apos;t refill the draw area, or when someone places a <strong>vertical card in Tuesday</strong>. A horizontal card spanning Tuesday doesn&apos;t trigger final turns.</p>
         <div className="walkthrough-example">
           <strong>Example: reaching Tuesday</strong>
-          <p>After your vertical Tuesday placement, you sit out. Finish the current draw, then the other players take one final turn each. The player whose picked card has the lowest combined value goes first.</p>
+          <p>If you and a computer both place vertically in Tuesday, you both sit out. Refill the draw area; everyone else gets one final draw and placement.</p>
         </div>
-        <p>If the deck cannot fully refill the draw area, use any cards that remain. The week ends after everyone takes one final turn.</p>
+        <p>For final draws, eligible players go in picked-card value order, lowest first, using the usual tie-breakers. Blind draws go last. If the deck can&apos;t fully refill the area, use the cards that remain; if there aren&apos;t enough for everyone, no one gets a final turn.</p>
       </>
     ),
   },
@@ -122,25 +116,25 @@ const steps: Step[] = [
     title: 'Check for a bust',
     content: (
       <>
-        <p>At the end of the week, check your final <span aria-hidden="true">💰</span> money and <span aria-hidden="true">⚡</span> energy. If either is negative, find the first column where a running total falls below zero.</p>
+        <p>At the end of the Week, check your <span aria-hidden="true">💰</span> MONEY and <span aria-hidden="true">⚡</span> ENERGY from left to right. If either running total ever falls below zero, find the first column where that happens, even if a later column brings it back above zero.</p>
         <div className="walkthrough-example">
-          <strong>Example: money runs short</strong>
-          <p>You start with 5 money. Wednesday adds -2, leaving 3. Thursday adds -4, bringing the total to -1. If your final money or energy is negative, gray out Thursday and every later column. Those columns count as zero, including their carnival points. Keep the 3 money you had before Thursday.</p>
+          <strong>Example: MONEY runs short</strong>
+          <p>You start with 5 MONEY. Wednesday adds -2, leaving 3. Thursday adds -4, bringing the total to -1. Eliminate Thursday and every later column: their values, including CARNIVAL POINTS, count as zero. Keep the 3 MONEY you had before Thursday.</p>
         </div>
-        <p>If a horizontal card crosses the bust line, its section before the line still counts; its section in the busted column does not. Busting does not turn cards over. In week 3, you cannot bust on Mardi Gras Tuesday: if a resource first goes below zero there, keep Tuesday&apos;s carnival points and count that resource as zero. Tuesday is not grayed out unless a bust started earlier. If both final resources are zero or higher, no columns are busted, even if a resource was negative earlier.</p>
+        <p>A horizontal card&apos;s section before the bust still counts. In Week 3, you can&apos;t bust on Mardi Gras Tuesday: if a resource first falls below zero there, keep Tuesday&apos;s CARNIVAL POINTS and count that resource as zero. A bust from an earlier day still eliminates Tuesday.</p>
       </>
     ),
   },
   {
-    title: 'Ready for the next week!',
+    title: 'Ready for the next Week!',
     content: (
       <>
-        <p>After the bust check, carry each player&apos;s remaining <span aria-hidden="true">🎭</span> carnival points, <span aria-hidden="true">💰</span> money, and <span aria-hidden="true">⚡</span> energy into the next week. In weeks 2 and 3, the player with the fewest carried-over carnival points starts. Break ties clockwise from the previous week&apos;s starting player.</p>
+        <p>After the bust check, carry each player&apos;s remaining <span aria-hidden="true">🎭</span> CARNIVAL POINTS, <span aria-hidden="true">💰</span> MONEY, and <span aria-hidden="true">⚡</span> ENERGY into the next Week. In Weeks 2 and 3, the player with the fewest carried-over CARNIVAL POINTS starts. Break ties clockwise from the previous Week&apos;s starting player.</p>
         <div className="walkthrough-example">
-          <strong>Example: starting week 2</strong>
-          <p>If you have 8 carnival points and a computer has 5, the computer starts because it has fewer carried-over carnival points.</p>
+          <strong>Example: starting Week 2</strong>
+          <p>If you have 8 CARNIVAL POINTS and a computer has 5, the computer starts because it has fewer carried-over CARNIVAL POINTS.</p>
         </div>
-        <p>After week 3, calculate <strong><span aria-hidden="true">🎭</span> carnival points − <span aria-hidden="true">💰</span> remaining money − <span aria-hidden="true">⚡</span> remaining energy</strong>. For example, <span aria-hidden="true">🎭</span> 18 carnival points, <span aria-hidden="true">💰</span> 6 money, and <span aria-hidden="true">⚡</span> 4 energy gives a final score of 8. The highest score wins. If tied, the player with the most cards occupying Tuesday wins. Count covered cards, horizontal cards, and cards in a busted column. If still tied, share the win.</p>
+        <p>After Week 3, calculate <strong><span aria-hidden="true">🎭</span> CARNIVAL POINTS − <span aria-hidden="true">💰</span> remaining MONEY − <span aria-hidden="true">⚡</span> remaining ENERGY</strong>. For example, <span aria-hidden="true">🎭</span> 18 CARNIVAL POINTS, <span aria-hidden="true">💰</span> 6 MONEY, and <span aria-hidden="true">⚡</span> 4 ENERGY gives a final score of 8. The highest score wins. If tied, the player with the most cards occupying Tuesday wins. Count covered cards, horizontal cards, and cards in a busted column. If still tied, share the win.</p>
       </>
     ),
   },
@@ -187,6 +181,7 @@ function WalkthroughButton() {
         <div className="walkthrough-step" aria-live="polite" aria-atomic="true">
           <p className="walkthrough-progress">Step {step + 1} of {steps.length}</p>
           <h3>{steps[step].title}</h3>
+          <WalkthroughVisual step={step} />
           {steps[step].content}
         </div>
         <div className="walkthrough-actions">
