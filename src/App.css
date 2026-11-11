@@ -386,7 +386,9 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
   .game > .play-area { grid-column: 1; grid-row: 3; align-self: stretch; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0.45rem; }
   .play-area h2 { margin-bottom: 0.3rem; font-size: 0.7rem; }
   .draw-area { display: flex; flex: 1 1 0; flex-direction: column; align-self: stretch; width: 0; }
-  .cards { flex: 1 1 0; flex-wrap: wrap; align-content: flex-start; gap: 0.25rem; min-height: 0; overflow: auto; padding: 0.25rem; }
+  .cards { display: grid; flex: 1 1 0; grid-template-columns: repeat(auto-fill, var(--card-w)); grid-auto-rows: var(--card-w); grid-auto-flow: row dense; align-content: start; gap: 0.25rem; min-height: 0; overflow: auto; padding: 0.25rem; }
+  .cards > .card { grid-row: span 2; align-self: start; }
+  .cards > .card.horizontal-card { grid-column: span 2; grid-row: span 1; }
   .cards .card { padding: 0.2rem; }
   .game > .play-area .card-face, .game > .your-schedule .card-face, .game > .drag-preview .card-face { font-size: 0.75rem; }
   .game > .play-area .card, .game > .your-schedule .card, .game .drag-preview { padding: 0.2rem; }
