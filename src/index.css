@@ -16,6 +16,10 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
+@media (pointer: coarse) {
+  body { -webkit-user-select: none; user-select: none; }
+  input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
+}
 body::before {
   content: "";
   display: block;
