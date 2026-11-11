@@ -22,6 +22,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .start h1 { margin: 0.65rem auto; color: var(--deep-purple); font: 800 clamp(2.9rem, 8vw, 5rem)/0.98 Georgia, serif; letter-spacing: -0.045em; }
 .start h1 em { display: block; color: var(--purple); }
 .hero-copy { max-width: 420px; margin: 1rem auto 0; color: #6d5d69; line-height: 1.6; }
+.hero-copy-mobile-break { display: none; }
 .bead-divider { display: flex; align-items: center; gap: 0.8rem; max-width: 330px; margin: 1.6rem auto; color: var(--gold); }
 .bead-divider::before, .bead-divider::after { content: ""; height: 1px; flex: 1; background: #ddcda9; }
 .setup-card { max-width: 440px; margin: 0 auto; padding: 1.8rem; border: 1px solid #eadcbe; border-radius: 20px; background: #fffdf8; box-shadow: 0 14px 40px #6b4c2514, 0 3px 8px #6b4c250a; }
@@ -332,6 +333,7 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 }
 
 @media (max-width: 600px), (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+  .hero-copy-mobile-break { display: initial; }
   .carnival-points, .computer-carnival-points { position: relative; }
   .carnival-points-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .carnival-points-icon { display: block; flex: 0 0 auto; width: 1.15rem; height: 0.75rem; fill: #d78cff; }

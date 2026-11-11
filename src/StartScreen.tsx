@@ -56,7 +56,7 @@ function StartScreen({ onStart }: Props) {
         <div className="hero-ornament" aria-hidden="true">✦ <span>⚜</span> ✦</div>
         <p className="eyebrow">Alpha Version</p>
         <h1>Make it to <NeonTitle flickeringLetters={flickeringLetters} /></h1>
-        <p className="hero-copy">Plan your schedule, conserve energy, spend money,<br></br> and let the good times roll.</p>
+        <p className="hero-copy">Plan your schedule,<br className="hero-copy-mobile-break" /> conserve energy, spend money,<br /> and let the good times roll.</p>
         <div className="bead-divider" aria-hidden="true"><span>✦</span></div>
         <section className="setup-card" aria-labelledby="setup-heading">
           <p className="eyebrow">Gather your krewe</p>
