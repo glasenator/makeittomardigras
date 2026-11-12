@@ -72,7 +72,7 @@ const steps: Step[] = [
     title: 'See what counts',
     content: (
       <>
-        <p>Each column has four sections. From top to bottom, they count as <strong><span aria-hidden="true">🎭</span> CARNIVAL POINTS, <span aria-hidden="true">💰</span> MONEY, <span aria-hidden="true">⚡</span> ENERGY, and <span aria-hidden="true">🎭</span> CARNIVAL POINTS</strong>. Only visible values count; a blank card back counts as zero.</p>
+        <p>Each column has four sections. From top to bottom, they count as <strong><span aria-hidden="true">🎭</span> CARNIVAL POINTS, <span aria-hidden="true">💰</span> MONEY, <span aria-hidden="true">⚡</span> ENERGY, and <span aria-hidden="true">🎭</span> CARNIVAL POINTS</strong>. Only visible values count; a blank card back counts as zero. The card on the right shows the MONEY and ENERGY you would keep if the Week ended now, including any bust. It can change as you play.</p>
         <div className="walkthrough-example">
           <strong>Example: one column</strong>
           <ul className="walkthrough-score-example">
@@ -116,7 +116,7 @@ const steps: Step[] = [
     title: 'Check for a bust',
     content: (
       <>
-        <p>At the end of the Week, check your <span aria-hidden="true">💰</span> MONEY and <span aria-hidden="true">⚡</span> ENERGY from left to right. If either running total ever falls below zero, find the first column where that happens, even if a later column brings it back above zero.</p>
+        <p>At the end of the Week, check your <span aria-hidden="true">💰</span> MONEY and <span aria-hidden="true">⚡</span> ENERGY from left to right. If either running total ever falls below zero, find the first column where that happens, even if a later column brings it back above zero. During play, the visible value that would cause the first bust pulses red; this warning can change as you play.</p>
         <div className="walkthrough-example">
           <strong>Example: MONEY runs short</strong>
           <p>You start with 5 MONEY. Wednesday adds -2, leaving 3. Thursday adds -4, bringing the total to -1. Eliminate Thursday and every later column: their values, including CARNIVAL POINTS, count as zero. Keep the 3 MONEY you had before Thursday.</p>

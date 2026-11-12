@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { makeDecks, type Card, type WeekDecks } from './deck'
 import { canPlace, completedWeekTotals, computersAbleToReachTuesday, DAYS, drawBlind, finalScore, flipCard, flipTargets, lastPlayStatus, legalMoves, newGame, playCard, shuffle, SLOTS, startNextWeek, tuesdayCardCount, WEEKS, winningPlayers } from './gameLogic'
-import { activeValues, backValues, scheduleTotals } from './scheduleTotals'
+import { activeValues, backValues, bustWarningSections, scheduleTotals, scheduleTotalsAfterBust } from './scheduleTotals'
 import { formatValue } from './formatValue'
 import cardDealUrl from './assets/carddeal.m4a'
 import shuffleUrl from './assets/shuffle.m4a'
@@ -15,12 +15,12 @@ import ComputerSchedules from './ComputerSchedules'
 import { chooseBlindDraw, chooseComputerMove, chooseFlipTarget, type Difficulty } from './computerPlayer'
 import CardNumber from './CardNumber'
 
-function CardFace({ top, bottom, horizontal = false }: { top: ReactNode; bottom: ReactNode; horizontal?: boolean }) {
+function CardFace({ top, bottom, horizontal = false, topWarning, bottomWarning }: { top: ReactNode; bottom: ReactNode; horizontal?: boolean; topWarning?: 'money' | 'energy'; bottomWarning?: 'money' | 'energy' }) {
   return (
     <div className={`card-face${horizontal ? ' card-face-horizontal' : ''}`}>
-      {typeof top === 'number' ? <CardNumber value={top} position={horizontal ? 'left' : 'top'} /> : <span>{top}</span>}
+      {typeof top === 'number' ? <CardNumber value={top} position={horizontal ? 'left' : 'top'} bustWarning={topWarning} /> : <span>{top}</span>}
       <hr />
-      {typeof bottom === 'number' ? <CardNumber value={bottom} position={horizontal ? 'right' : 'bottom'} /> : <span>{bottom}</span>}
+      {typeof bottom === 'number' ? <CardNumber value={bottom} position={horizontal ? 'right' : 'bottom'} bustWarning={bottomWarning} /> : <span>{bottom}</span>}
     </div>
   )
 }
@@ -338,6 +338,10 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
     const totals = state.weekComplete
       ? completedWeekTotals(state)[i]
       : scheduleTotals(state.schedules[i], state.starting[i], bust)
+    const resourceTotals = state.weekComplete
+      ? totals
+      : scheduleTotalsAfterBust(state.schedules[i], state.starting[i], state.week === WEEKS)
+    const bustWarnings = state.weekComplete ? [] : bustWarningSections(state.schedules[i], state.starting[i], state.week === WEEKS)
     const targets = state.pendingFlip?.player === i && i === 0 ? flipTargets(state) : []
     const placementCard = draggedCard ?? selectedCard
     return (
@@ -441,7 +445,10 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
                           }
                         } : undefined}
                       >
-                        {values ? <CardFace top={values.top} bottom={values.bottom} horizontal={horizontal} /> : <hr className="card-back-divider" aria-hidden="true" />}
+                        {values ? <CardFace top={values.top} bottom={values.bottom} horizontal={horizontal}
+                          topWarning={bustWarnings.find((warning) => warning.card === card && warning.half === 'top')?.resource}
+                          bottomWarning={bustWarnings.find((warning) => warning.card === card && warning.half === 'bottom')?.resource}
+                        /> : <hr className="card-back-divider" aria-hidden="true" />}
                       </div>
                     )
                   })}
@@ -460,10 +467,11 @@ function Game({ numPlayers, difficulty, onExit, audioEnabled }: Props) {
           </div>
           <div
             className="card total-card"
-            aria-label={`Running total: money ${totals.money}, energy ${totals.energy}`}
+            aria-label={`${state.weekComplete ? 'Week total after bust check' : 'Projected total if the week ended now'}: money ${resourceTotals.money}, energy ${resourceTotals.energy}`}
+            title={state.weekComplete ? 'Week total after bust check' : 'Projected total if the week ended now, including any bust'}
             aria-live="polite"
           >
-            <CardFace top={`💰 ${totals.money}`} bottom={`⚡ ${totals.energy}`} />
+            <CardFace top={`💰 ${resourceTotals.money}`} bottom={`⚡ ${resourceTotals.energy}`} />
           </div>
         </div>
       </section>

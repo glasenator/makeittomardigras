@@ -5,7 +5,7 @@ import { transformWithEsbuild } from 'vite'
 
 const source = await readFile(new URL('../src/scheduleTotals.ts', import.meta.url), 'utf8')
 const { code: javascript } = await transformWithEsbuild(source, 'scheduleTotals.ts')
-const { bustColumn, scheduleTotals, scheduleTotalsAfterBust } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`)
+const { bustColumn, bustWarningSections, scheduleTotals, scheduleTotalsAfterBust } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`)
 
 const cards = [
   { id: 1, top: 1, bottom: 2, placedAt: 3 },
@@ -122,4 +122,58 @@ test('bust calculation uses visible overlap values and carried starting resource
   ]]
   assert.equal(bustColumn(schedule, { money: 2, energy: 2, points: 8 }), 0)
   assert.equal(bustColumn(schedule, { money: 2, energy: 3, points: 8 }), null)
+})
+
+test('projected resources update when covering or flipping removes an earlier bust', () => {
+  for (const resource of ['money', 'energy']) {
+    const schedule = Array.from({ length: 7 }, () => [null, null, null])
+    const starting = { money: 5, energy: 5, points: 0 }
+    schedule[0][1] = { id: 1, top: -6, bottom: -6, placedAt: 1 }
+    schedule[1][1] = { id: 2, top: 4, bottom: 4, placedAt: 1 }
+    assert.deepEqual(scheduleTotalsAfterBust(schedule, starting), starting)
+
+    schedule[0][1].faceDown = true
+    assert.deepEqual(scheduleTotalsAfterBust(schedule, starting), { money: 15, energy: 15, points: 0 })
+
+    schedule[0][1].faceDown = false
+    schedule[0][resource === 'money' ? 0 : 2] = { id: 3, top: 2, bottom: 2, placedAt: 2 }
+    assert.deepEqual(scheduleTotalsAfterBust(schedule, starting), starting)
+    schedule[0][resource === 'money' ? 2 : 0] = { id: 4, top: 2, bottom: 2, placedAt: 3 }
+    assert.deepEqual(scheduleTotalsAfterBust(schedule, starting), { money: 11, energy: 11, points: 4 })
+  }
+})
+
+test('bust warnings identify visible halves causing the first bust, including both resources', () => {
+  const starting = { money: 5, energy: 5, points: 0 }
+  const first = { id: 1, top: -6, bottom: -7, placedAt: 1 }
+  const later = { id: 2, top: 8, bottom: 8, placedAt: 1 }
+  const schedule = [[null, first, null], [null, later, null]]
+  assert.deepEqual(bustWarningSections(schedule, starting), [
+    { card: first, half: 'top', resource: 'money' },
+    { card: first, half: 'bottom', resource: 'energy' },
+  ])
+  first.faceDown = true
+  assert.deepEqual(bustWarningSections(schedule, starting), [])
+  first.faceDown = false
+  const cover = { id: 3, top: 1, bottom: 2, placedAt: 2 }
+  schedule[0][0] = cover
+  assert.deepEqual(bustWarningSections(schedule, starting), [
+    { card: first, half: 'bottom', resource: 'energy' },
+  ])
+  schedule[0][2] = { id: 4, top: 2, bottom: 1, placedAt: 3 }
+  assert.deepEqual(bustWarningSections(schedule, starting), [])
+})
+
+test('bust warnings follow horizontal halves and exclude Mardi Gras Tuesday', () => {
+  const starting = { money: 5, energy: 5, points: 0 }
+  const schedule = Array.from({ length: 7 }, () => [null, null, null])
+  const horizontal = { id: 1, top: 2, bottom: -8, orientation: 'horizontal', row: 1, placedAt: 1 }
+  schedule[5].push(horizontal)
+  assert.deepEqual(bustWarningSections(schedule, starting), [{ card: horizontal, half: 'bottom', resource: 'money' }])
+  assert.deepEqual(bustWarningSections(schedule, starting, true), [])
+
+  schedule[0][1] = { id: 2, top: 0, bottom: -6, placedAt: 1 }
+  assert.deepEqual(bustWarningSections(schedule, starting, true), [
+    { card: schedule[0][1], half: 'bottom', resource: 'energy' },
+  ])
 })

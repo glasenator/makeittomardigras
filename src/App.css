@@ -207,6 +207,9 @@ button:hover { background: #f5e9d1; border-color: #b48b36; }
 .card-face-horizontal > span { min-width: 0; }
 .card-face-horizontal hr, .computer-schedule .card-face-horizontal hr { width: 3px; height: 85%; }
 .computer-schedule .card-face-horizontal hr { width: 2px; }
+.card-face > .bust-warning { color: #aa1d1d; animation: bust-warning-pulse 2.4s ease-in-out infinite alternate; }
+@keyframes bust-warning-pulse { from { color: #741b23; transform: scale(1); } to { color: #e02020; transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .card-face > .bust-warning { animation: none; } }
 .flip-value { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--purple); font-size: 0.8rem; line-height: 1.05; white-space: nowrap; }
 .flip-value-bottom { flex-direction: column-reverse; }
 .flip-arrows { font-size: 0.9rem; line-height: 0.85; }

@@ -86,6 +86,23 @@ export function bustColumn(schedule: Schedule, starting: PlayerTotals, protectFi
   return null
 }
 
+export function bustWarningSections(schedule: Schedule, starting: PlayerTotals, protectFinalColumn = false) {
+  const day = bustColumn(schedule, starting, protectFinalColumn)
+  if (day === null) return []
+
+  const before = scheduleTotals(schedule, starting, day)
+  const column = visibleGrid(schedule)[day]
+  return ([1, 2] as const).flatMap((row) => {
+    const entry = column[row]
+    if (!entry) return []
+    const value = entryValue(entry, day, row)
+    const resource: 'money' | 'energy' = row === 1 ? 'money' : 'energy'
+    if (value >= 0 || before[resource] + value >= 0) return []
+    const first = entry.card.orientation === 'horizontal' ? day === entry.day : row === entry.row
+    return [{ card: entry.card, half: first ? 'top' as const : 'bottom' as const, resource }]
+  })
+}
+
 export function scheduleTotalsAfterBust(
   schedule: Schedule,
   starting: PlayerTotals,

@@ -95,7 +95,7 @@ function RulesButton() {
             <li className="score-energy"><strong><span aria-hidden="true">⚡</span> ENERGY</strong></li>
             <li className="score-points"><strong><span aria-hidden="true">🎭</span> CARNIVAL POINTS</strong></li>
           </ol>
-          <p>Only visible values count; covered values do not. Add visible MONEY and ENERGY to your starting amounts. Your CARNIVAL POINT total appears above your schedule on the left; your running money and energy appear on the card at its right.</p>
+          <p>Only visible values count; covered values do not. Add visible MONEY and ENERGY to your starting amounts. Your CARNIVAL POINT total appears above your schedule on the left; the card on the right shows the MONEY and ENERGY you would keep if the week ended now, including any bust. A visible value that would cause the first bust pulses red. These projections can change as you play; busts are finalized at the end of the week.</p>
         </section>
 
         <section>
