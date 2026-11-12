@@ -4,6 +4,8 @@
 
 A retro-styled card-game playtest for **2–5 players**: you and up to four computer opponents. Build your schedule over three weeks and finish with the highest final score.
 
+Play now: https://make-it-to-mardi-gras-ca4cdbb9e866.herokuapp.com/
+
 <p align="center">
   <img src="docs/images/start-screen.png" alt="Start screen showing player count and computer difficulty options" width="520">
 </p>
